@@ -9,23 +9,8 @@ import (
 	"strings"
 )
 
-type Command int
-
-const (
-	cArithmetic Command = iota
-	cComp
-	cLogic
-	cPush
-	cPop
-	cLabel
-	cGoto
-	cIf
-	comment
-	err
-)
-
 func main() {
-	inputPath := "BasicTest.vm"
+	inputPath := "try.vm"
 	readFromFile(inputPath)
 }
 
@@ -38,38 +23,28 @@ func readFromFile(filename string) {
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
 	for fileScanner.Scan() {
-		cmdType := parsLine(fileScanner.Text())
+		cmdType, cmd := parsLine(fileScanner.Text())
+		args := strings.Split(cmd, " ")
+		fmt.Println(args)
+		hackCode := cmdHandlersMap[cmdType](args)
+		fmt.Println(hackCode)
 	}
 	readFile.Close()
 }
 
-func parsLine(line string) Command {
-	spaces := "^(\t|\\s)*"
-	cmdRegexMap := map[Command]string{
-		cLogic:      "^and *|^or *|^not *",
-		cComp:       "^eq *|^gt *|^lt *",
-		cArithmetic: "^add *|^sub *|^neg",
-		cPush:       "^push *",
-		cPop:        "^pop *",
-		cLabel:      "^label:",
-		cGoto:       "^goto *",
-		cIf:         "^if *",
-		comment:     "^//*",
-	}
-	t1 := strings.ReplaceAll(line, "", "")
-	fmt.Println(t1)
-	t := strings.Split(t1, " ")
-	fmt.Println(t[0])
+func parsLine(line string) (Command, string) {
 	for key, element := range cmdRegexMap {
-		match, _ := regexp.MatchString(spaces+element, line)
-		if match {
-			return key
+		r, _ := regexp.Compile(element)
+		if r.MatchString(line) {
+			return key, r.FindString(line)
 		}
 	}
-	return err
+	return err, ""
 }
 
-func pushHandler(segmant string, offset int) string {
+func pushHandler(args []string) string {
+	segmant := args[1]
+	offset, _ := strconv.Atoi(args[2])
 	resString := ""
 	if segmant != "constant" {
 		resString += "@" + segmant + "\n"
@@ -79,7 +54,7 @@ func pushHandler(segmant string, offset int) string {
 		}
 		resString += "D = M" + "\n"
 	} else {
-		resString += "@" + strconv.Itoa(offset) + "\n"
+		resString += "@" + args[2] + "\n"
 		resString += "D = A" + "\n"
 	}
 	resString += "@sp" + "\n"
@@ -90,7 +65,9 @@ func pushHandler(segmant string, offset int) string {
 	return resString
 }
 
-func popHandler(segmant string, offset int) string {
+func popHandler(args []string) string {
+	segmant := args[1]
+	offset, _ := strconv.Atoi(args[2])
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
@@ -106,36 +83,35 @@ func popHandler(segmant string, offset int) string {
 	return resString
 }
 
-func plusMinusHandler(sign string) string {
+func arithmaticHandler(args []string) string {
+	action := args[0]
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
+	if action == "neg" {
+		resString += "M = -M" + "\n"
+		return resString
+	} else if action == "not" {
+		resString += "M = !M" + "\n"
+		return resString
+	}
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
-	if sign == "sub" {
+	if action == "sub" {
 		resString += "M = D - M" + "\n"
-	} else {
+	} else if action == "add" {
 		resString += "M = D + M" + "\n"
+	} else if action == "or" {
+		resString += "M = D | M" + "\n"
+	} else if action == "and" {
+		resString += "M = D & M" + "\n"
 	}
 	resString += "@sp" + "\n"
 	resString += "M = M - 1" + "\n"
 	return resString
 }
 
-func negHandler(sign string) string {
-	resString := "@sp" + "\n"
-	resString += "A = M" + "\n"
-	resString += "A = A - 1" + "\n"
-	resString += "D = M" + "\n"
-
-	resString += "M = -M" + "\n"
-
-	resString += "@sp" + "\n"
-	resString += "M = M - 1" + "\n"
-	return resString
-}
-
-func compHandler(comp string) string {
+func compHandler(args []string) string {
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
