@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	inputPath := "BasicTest.vm"
+	inputPath := "try.vm"
 	readFromFile(inputPath)
 }
 
@@ -84,20 +84,27 @@ func popHandler(args []string) string {
 }
 
 func arithmaticHandler(args []string) string {
-	sign := args[0]
+	action := args[0]
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
-	if sign == "neg" {
+	if action == "neg" {
 		resString += "M = -M" + "\n"
+		return resString
+	} else if action == "not" {
+		resString += "M = !M" + "\n"
 		return resString
 	}
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
-	if sign == "sub" {
+	if action == "sub" {
 		resString += "M = D - M" + "\n"
-	} else {
+	} else if action == "add" {
 		resString += "M = D + M" + "\n"
+	} else if action == "or" {
+		resString += "M = D | M" + "\n"
+	} else if action == "and" {
+		resString += "M = D & M" + "\n"
 	}
 	resString += "@sp" + "\n"
 	resString += "M = M - 1" + "\n"

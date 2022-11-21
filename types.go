@@ -7,7 +7,6 @@ type Command int
 const (
 	cArithmetic Command = iota
 	cComp
-	cLogic
 	cPush
 	cPop
 	cLabel
@@ -20,9 +19,8 @@ const (
 var spaces = "(\t|\\s)*"
 
 var cmdRegexMap = map[Command]string{
-	cArithmetic: fmt.Sprintf("^%s(add|sub|neg).*", spaces),
+	cArithmetic: fmt.Sprintf("^%s(add|sub|neg|and|or|not).*", spaces),
 	cComp:       fmt.Sprintf("^%s(eq|gt|lt).*", spaces),
-	cLogic:      fmt.Sprintf("^%s(and|or|not).*", spaces),
 	cPush:       fmt.Sprintf("^%spush.*", spaces),
 	cPop:        fmt.Sprintf("^%spop.*", spaces),
 	cLabel:      fmt.Sprintf("^%slabel:.*", spaces),
@@ -34,7 +32,6 @@ var cmdRegexMap = map[Command]string{
 var cmdHandlersMap = map[Command]func([]string) string{
 	cArithmetic: arithmaticHandler,
 	//cComp:       ,
-	//cLogic:      ,
 	cPush: pushHandler,
 	cPop:  popHandler,
 	//cLabel:      ,
