@@ -6,7 +6,6 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 type Command int
@@ -38,35 +37,32 @@ func readFromFile(filename string) {
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
 	for fileScanner.Scan() {
-		cmdType := parsLine(fileScanner.Text())
+		cmdType, cmd := parsLine(fileScanner.Text())
+		fmt.Println(cmdType, cmd)
 	}
 	readFile.Close()
 }
 
-func parsLine(line string) Command {
-	spaces := "^(\t|\\s)*"
+func parsLine(line string) (Command, string) {
+	spaces := "(\t|\\s)*"
 	cmdRegexMap := map[Command]string{
-		cLogic:      "^and *|^or *|^not *",
-		cComp:       "^eq *|^gt *|^lt *",
-		cArithmetic: "^add *|^sub *|^neg",
-		cPush:       "^push *",
-		cPop:        "^pop *",
-		cLabel:      "^label:",
-		cGoto:       "^goto *",
-		cIf:         "^if *",
-		comment:     "^//*",
+		cArithmetic: fmt.Sprintf("^%s(add|sub|neg).*", spaces),
+		cComp:       fmt.Sprintf("^%s(eq|gt|lt).*", spaces),
+		cLogic:      fmt.Sprintf("^%s(and|or|not).*", spaces),
+		cPush:       fmt.Sprintf("^%spush.*", spaces),
+		cPop:        fmt.Sprintf("^%spop.*", spaces),
+		cLabel:      fmt.Sprintf("^%slabel:.*", spaces),
+		cGoto:       fmt.Sprintf("^%sgoto.*", spaces),
+		cIf:         fmt.Sprintf("^%sif.*", spaces),
+		comment:     fmt.Sprintf("^%s//", spaces),
 	}
-	t1 := strings.ReplaceAll(line, "", "")
-	fmt.Println(t1)
-	t := strings.Split(t1, " ")
-	fmt.Println(t[0])
 	for key, element := range cmdRegexMap {
-		match, _ := regexp.MatchString(spaces+element, line)
-		if match {
-			return key
+		r, _ := regexp.Compile(element)
+		if r.MatchString(line) {
+			return key, r.FindString(line)
 		}
 	}
-	return err
+	return err, ""
 }
 
 func pushHandler(segmant string, offset int) string {
