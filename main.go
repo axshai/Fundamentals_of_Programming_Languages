@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -23,7 +24,10 @@ func readFromFile(filename string) {
 	fileScanner.Split(bufio.ScanLines)
 	for fileScanner.Scan() {
 		cmdType, cmd := parsLine(fileScanner.Text())
-		fmt.Println(cmdType, cmd)
+		args := strings.Split(cmd, " ")
+		fmt.Println(args)
+		hackCode := cmdHandlersMap[cmdType](args)
+		fmt.Println(hackCode)
 	}
 	readFile.Close()
 }
@@ -38,7 +42,9 @@ func parsLine(line string) (Command, string) {
 	return err, ""
 }
 
-func pushHandler(segmant string, offset int) string {
+func pushHandler(args []string) string {
+	segmant := args[1]
+	offset, _ := strconv.Atoi(args[2])
 	resString := ""
 	if segmant != "constant" {
 		resString += "@" + segmant + "\n"
@@ -48,7 +54,7 @@ func pushHandler(segmant string, offset int) string {
 		}
 		resString += "D = M" + "\n"
 	} else {
-		resString += "@" + strconv.Itoa(offset) + "\n"
+		resString += "@" + args[2] + "\n"
 		resString += "D = A" + "\n"
 	}
 	resString += "@sp" + "\n"
@@ -59,7 +65,9 @@ func pushHandler(segmant string, offset int) string {
 	return resString
 }
 
-func popHandler(segmant string, offset int) string {
+func popHandler(args []string) string {
+	segmant := args[1]
+	offset, _ := strconv.Atoi(args[2])
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
@@ -75,7 +83,8 @@ func popHandler(segmant string, offset int) string {
 	return resString
 }
 
-func arithmaticHandler(sign string) string {
+func arithmaticHandler(args []string) string {
+	sign := args[0]
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
@@ -95,7 +104,7 @@ func arithmaticHandler(sign string) string {
 	return resString
 }
 
-func compHandler(comp string) string {
+func compHandler(args []string) string {
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"

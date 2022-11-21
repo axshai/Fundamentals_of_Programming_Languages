@@ -31,3 +31,14 @@ var cmdRegexMap = map[Command]string{
 	comment:     fmt.Sprintf("^%s//", spaces),
 }
 
+var cmdHandlersMap = map[Command]func([]string) string{
+	cArithmetic: arithmaticHandler,
+	//cComp:       ,
+	//cLogic:      ,
+	cPush: pushHandler,
+	cPop:  popHandler,
+	//cLabel:      ,
+	//cGoto:       ,
+	//cIf:         ,
+	//comment:     ,
+}
