@@ -75,10 +75,14 @@ func popHandler(segmant string, offset int) string {
 	return resString
 }
 
-func plusMinusHandler(sign string) string {
+func arithmaticHandler(sign string) string {
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
+	if sign == "neg" {
+		resString += "M = -M" + "\n"
+		return resString
+	}
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	if sign == "sub" {
@@ -86,19 +90,6 @@ func plusMinusHandler(sign string) string {
 	} else {
 		resString += "M = D + M" + "\n"
 	}
-	resString += "@sp" + "\n"
-	resString += "M = M - 1" + "\n"
-	return resString
-}
-
-func negHandler(sign string) string {
-	resString := "@sp" + "\n"
-	resString += "A = M" + "\n"
-	resString += "A = A - 1" + "\n"
-	resString += "D = M" + "\n"
-
-	resString += "M = -M" + "\n"
-
 	resString += "@sp" + "\n"
 	resString += "M = M - 1" + "\n"
 	return resString
