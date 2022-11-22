@@ -18,6 +18,8 @@ const (
 
 var spaces = "(\t|\\s)*"
 
+var labelCounter = 1
+
 var cmdRegexMap = map[Command]string{
 	cArithmetic: fmt.Sprintf("^%s(add|sub|neg|and|or|not).*", spaces),
 	cComp:       fmt.Sprintf("^%s(eq|gt|lt).*", spaces),

@@ -27,7 +27,7 @@ func readFromFile(filename string) {
 		args := strings.Split(cmd, " ")
 		fmt.Println(args)
 		hackCode := cmdHandlersMap[cmdType](args)
-		fmt.Println(hackCode)
+		fmt.Println(hackCode) //
 	}
 	readFile.Close()
 }
@@ -112,12 +112,33 @@ func arithmaticHandler(args []string) string {
 }
 
 func compHandler(args []string) string {
+	trueLabel := fmt.Sprintf("(LABEL_T_%s)", strconv.Itoa(labelCounter))
+	endLabel := fmt.Sprintf("(LABEL_E_%s)", strconv.Itoa(labelCounter))
+	labelCounter++
+
+	action := args[0]
 	resString := "@sp" + "\n"
 	resString += "A = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	resString += "D = M" + "\n"
-	resString += "M = -M" + "\n"
+	resString += "A = A - 1" + "\n"
+	resString += "D = M - D" + "\n"
+	resString += "@" + "trueLabel" + "\n"
+	if action == "eq" {
+		resString += "D;JEQ" + "\n"
+	} else if action == "gt" {
+		resString += "D;JGT" + "\n"
+	} else if action == "lt" {
+		resString += "D;JLT" + "\n"
+	}
+	resString += "M = 0" + "\n"
+	resString += "@" + "endLabel" + "\n"
+	resString += "0;JMP" + "\n"
+	resString += trueLabel + "\n"
+	resString += "M = 1" + "\n"
+	resString += endLabel + "\n"
 	resString += "@sp" + "\n"
 	resString += "M = M - 1" + "\n"
+
 	return resString
 }
