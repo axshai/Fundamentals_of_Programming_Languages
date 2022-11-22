@@ -98,7 +98,7 @@ func arithmaticHandler(args []string) string {
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	if action == "sub" {
-		resString += "M = D - M" + "\n"
+		resString += "M = M - D" + "\n"
 	} else if action == "add" {
 		resString += "M = D + M" + "\n"
 	} else if action == "or" {
