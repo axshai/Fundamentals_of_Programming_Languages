@@ -112,8 +112,8 @@ func arithmaticHandler(args []string) string {
 }
 
 func compHandler(args []string) string {
-	trueLabel := fmt.Sprintf("(LABEL_T_%s)", strconv.Itoa(labelCounter))
-	endLabel := fmt.Sprintf("(LABEL_E_%s)", strconv.Itoa(labelCounter))
+	trueLabel := "LABEL_T_" + strconv.Itoa(labelCounter)
+	endLabel := "LABEL_E_" + strconv.Itoa(labelCounter)
 	labelCounter++
 
 	action := args[0]
@@ -123,7 +123,7 @@ func compHandler(args []string) string {
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	resString += "D = M - D" + "\n"
-	resString += "@" + "trueLabel" + "\n"
+	resString += "@" + trueLabel + "\n"
 	if action == "eq" {
 		resString += "D;JEQ" + "\n"
 	} else if action == "gt" {
@@ -131,12 +131,16 @@ func compHandler(args []string) string {
 	} else if action == "lt" {
 		resString += "D;JLT" + "\n"
 	}
-	resString += "M = 0" + "\n"
-	resString += "@" + "endLabel" + "\n"
+	resString += "D = 0" + "\n"
+	resString += "@" + endLabel + "\n"
 	resString += "0;JMP" + "\n"
-	resString += trueLabel + "\n"
-	resString += "M = 1" + "\n"
-	resString += endLabel + "\n"
+	resString += fmt.Sprintf("(%s)", trueLabel) + "\n"
+	resString += "D = -1" + "\n"
+	resString += fmt.Sprintf("(%s)", endLabel) + "\n"
+	resString += "@sp" + "\n"
+	resString += "A = M - 1" + "\n"
+	resString += "A = A - 1" + "\n"
+	resString += "M = D" + "\n"
 	resString += "@sp" + "\n"
 	resString += "M = M - 1" + "\n"
 
