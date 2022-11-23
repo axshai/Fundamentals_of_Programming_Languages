@@ -46,40 +46,70 @@ func pushHandler(args []string) string {
 	segmant := args[1]
 	offset, _ := strconv.Atoi(args[2])
 	resString := ""
-	if segmant != "constant" {
-		resString += "@" + segmant + "\n"
-		resString += "A = M" + "\n"
+	if segmant == "constant" {
+		resString += "@" + args[2] + "\n"
+		resString += "D = A" + "\n"
+	} else {
+		if segmant == "pointer" {
+			if args[2] == "0" {
+				segmant = "this"
+			} else {
+				segmant = "that"
+				offset = 0
+			}
+			resString += "@" + segmentsNameMap[segmant] + "\n"
+			resString += "A = M" + "\n"
+		} else if segmant == "static" {
+			segmant = fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
+			resString += "@" + segmant + "\n"
+			offset = 0
+
+		} else {
+			resString += "@" + segmentsNameMap[segmant] + "\n"
+			if segmant != "temp" {
+				resString += "A = M" + "\n"
+			}
+		}
 		for i := 0; i < offset; i++ {
 			resString += "A = A + 1" + "\n"
 		}
 		resString += "D = M" + "\n"
-	} else {
-		resString += "@" + args[2] + "\n"
-		resString += "D = A" + "\n"
 	}
-	resString += "@sp" + "\n"
+	resString += "@SP" + "\n"
 	resString += "A = M" + "\n"
 	resString += "M = D" + "\n"
-	resString += "@sp" + "\n"
-	resString += "M = M + 1"
+	resString += "@SP" + "\n"
+	resString += "M = M + 1" + "\n"
 	return resString
 }
 
 func popHandler(args []string) string {
 	segmant := args[1]
 	offset, _ := strconv.Atoi(args[2])
-	resString := "@sp" + "\n"
-	resString += "A = M" + "\n"
-	resString += "A = A - 1" + "\n"
+	resString := "@SP" + "\n"
+	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
-	resString += "@" + segmant + "\n"
-	resString += "A = M" + "\n"
+	if segmant == "pointer" {
+		if args[2] == "0" {
+			segmant = "this"
+		} else {
+			segmant = "that"
+			offset = 0
+		}
+		resString += "@" + segmentsNameMap[segmant] + "\n"
+	} else if segmant == "static" {
+		segmant = fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
+		resString += "@" + segmant + "\n"
+		offset = 0
+	} else {
+		resString += "@" + segmentsNameMap[segmant] + "\n"
+	}
 	for i := 0; i < offset; i++ {
 		resString += "A = A + 1" + "\n"
 	}
 	resString += "M = D" + "\n"
-	resString += "@sp" + "\n"
-	resString += "M = M - 1"
+	resString += "@SP" + "\n"
+	resString += "M = M - 1" + "\n"
 	return resString
 }
 
