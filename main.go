@@ -115,9 +115,8 @@ func popHandler(args []string) string {
 
 func arithmaticHandler(args []string) string {
 	action := args[0]
-	resString := "@sp" + "\n"
-	resString += "A = M" + "\n"
-	resString += "A = A - 1" + "\n"
+	resString := "@SP" + "\n"
+	resString += "A = M - 1" + "\n"
 	if action == "neg" {
 		resString += "M = -M" + "\n"
 		return resString
@@ -136,7 +135,7 @@ func arithmaticHandler(args []string) string {
 	} else if action == "and" {
 		resString += "M = D & M" + "\n"
 	}
-	resString += "@sp" + "\n"
+	resString += "@SP" + "\n"
 	resString += "M = M - 1" + "\n"
 	return resString
 }
@@ -147,9 +146,8 @@ func compHandler(args []string) string {
 	labelCounter++
 
 	action := args[0]
-	resString := "@sp" + "\n"
-	resString += "A = M" + "\n"
-	resString += "A = A - 1" + "\n"
+	resString := "@SP" + "\n"
+	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	resString += "D = M - D" + "\n"
@@ -167,12 +165,11 @@ func compHandler(args []string) string {
 	resString += fmt.Sprintf("(%s)", trueLabel) + "\n"
 	resString += "D = -1" + "\n"
 	resString += fmt.Sprintf("(%s)", endLabel) + "\n"
-	resString += "@sp" + "\n"
+	resString += "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "A = A - 1" + "\n"
 	resString += "M = D" + "\n"
-	resString += "@sp" + "\n"
+	resString += "@SP" + "\n"
 	resString += "M = M - 1" + "\n"
-
 	return resString
 }
