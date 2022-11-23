@@ -1,1 +1,4 @@
 *.vm
+.vscode/
+*.mod
+*.asm
