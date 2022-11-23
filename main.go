@@ -10,13 +10,18 @@ import (
 )
 
 func main() {
-	inputPath := "try.vm"
-	readFromFile(inputPath)
+	inputFile := os.Args[1]
+	outputFile := strings.Split(inputFile, ".")[0] + ".asm"
+	if _, err := os.Stat(outputFile); err == nil {
+		os.Remove(outputFile)
+	}
+	d1 := []byte(vmToAsmTraslator(inputFile))
+	os.WriteFile(outputFile, d1, 0x666)
 }
 
-func readFromFile(filename string) {
+func vmToAsmTraslator(filename string) string {
 	readFile, err := os.Open(filename)
-
+	var hackCode string
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -25,21 +30,23 @@ func readFromFile(filename string) {
 	for fileScanner.Scan() {
 		cmdType, cmd := parsLine(fileScanner.Text())
 		args := strings.Split(cmd, " ")
-		fmt.Println(args)
-		hackCode := cmdHandlersMap[cmdType](args)
-		fmt.Println(hackCode) //
+		if (cmdType != cComment) && (cmdType != cErr) {
+			hackCode += cmdHandlersMap[cmdType](args)
+		}
 	}
 	readFile.Close()
+
+	return initRam() + hackCode
 }
 
 func parsLine(line string) (Command, string) {
 	for key, element := range cmdRegexMap {
 		r, _ := regexp.Compile(element)
 		if r.MatchString(line) {
-			return key, r.FindString(line)
+			return key, line
 		}
 	}
-	return err, ""
+	return cErr, ""
 }
 
 func pushHandler(args []string) string {
@@ -172,4 +179,13 @@ func compHandler(args []string) string {
 	resString += "@SP" + "\n"
 	resString += "M = M - 1" + "\n"
 	return resString
+}
+
+func initRam() string {
+	res := ""
+	res += "@256\n"
+	res += "D = A\n"
+	res += "@SP\n"
+	res += "M = D\n"
+	return res
 }

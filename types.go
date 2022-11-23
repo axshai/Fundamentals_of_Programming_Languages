@@ -12,8 +12,8 @@ const (
 	cLabel
 	cGoto
 	cIf
-	comment
-	err
+	cComment
+	cErr
 )
 
 var spaces = "(\t|\\s)*"
@@ -28,16 +28,26 @@ var cmdRegexMap = map[Command]string{
 	cLabel:      fmt.Sprintf("^%slabel:.*", spaces),
 	cGoto:       fmt.Sprintf("^%sgoto.*", spaces),
 	cIf:         fmt.Sprintf("^%sif.*", spaces),
-	comment:     fmt.Sprintf("^%s//", spaces),
+	cComment:    fmt.Sprintf("^%s//", spaces),
 }
 
 var cmdHandlersMap = map[Command]func([]string) string{
 	cArithmetic: arithmaticHandler,
-	//cComp:       ,
-	cPush: pushHandler,
-	cPop:  popHandler,
+	cComp:       compHandler,
+	cPush:       pushHandler,
+	cPop:        popHandler,
 	//cLabel:      ,
 	//cGoto:       ,
 	//cIf:         ,
-	//comment:     ,
+	//cComment:     ,
+}
+
+var segmentsNameMap = map[string]string{
+	"static":   "STATIC",
+	"argument": "ARG",
+	"local":    "LCL",
+	"this":     "THIS",
+	"that":     "THAT",
+	// pointer:,
+	"temp": "5",
 }
