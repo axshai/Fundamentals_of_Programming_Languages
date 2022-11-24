@@ -14,36 +14,47 @@ func main() {
 	pathFinder(os.Args[1])
 }
 
+// The function recives a path to the project root folder (e.g. pro 7)
+// and for each folder that contains vm file it triggers the compilation process to create asm file
+// in the same folder.
 func pathFinder(rootPath string) {
 	files, err := os.ReadDir(rootPath)
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	for _, file := range files {
-		if file.IsDir() {
-			pathFinder(filepath.Join(rootPath, file.Name()))
+	// loop over the items in the dir
+	for _, item := range files {
+		// if it is a dir: make recursive call
+		if item.IsDir() {
+			pathFinder(filepath.Join(rootPath, item.Name()))
+			// if it is a vm file - trigger the compilation process to create asm file
 		} else {
 			r, _ := regexp.Compile(".*[.]vm")
-			if r.MatchString(file.Name()) {
-				currentFile = file.Name()
-				createAsmFile(filepath.Join(rootPath, file.Name()))
+			if r.MatchString(item.Name()) {
+				currentFile = item.Name()
+				createAsmFile(filepath.Join(rootPath, item.Name()))
 			}
 		}
 	}
 }
 
+// The function recives a path to the vm file - calls to the translator,
+// and writes the the resulting hack code to asm file.
 func createAsmFile(inputFilePath string) {
 	outputFile := strings.Split(inputFilePath, ".")[0] + ".asm"
+	// Clean from files from previous runs
 	if _, err := os.Stat(outputFile); err == nil {
 		os.Remove(outputFile)
 	}
-	d1 := []byte(vmToAsmTraslator(inputFilePath))
+	// translte (compile) the file.
+	hackCode := []byte(vmToAsmTraslator(inputFilePath))
 	f, _ := os.Create(outputFile)
-	f.Write(d1)
+	f.Write(hackCode)
 	f.Close()
 }
 
+// The function recives a path a to vm file, and returns string which is the translation
+// of this file to hack code
 func vmToAsmTraslator(filename string) string {
 	readFile, err := os.Open(filename)
 	var hackCode string
@@ -52,9 +63,11 @@ func vmToAsmTraslator(filename string) string {
 	}
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
+	// loop over the lines in the vm file
 	for fileScanner.Scan() {
-		cmdType, cmd := parsLine(fileScanner.Text())
-		args := strings.Split(cmd, " ")
+		// parse the line - get the type of the cmd and its arguments
+		cmdType, args := parsLine(fileScanner.Text())
+		// if the line contains a valid command - translate it.
 		if (cmdType != cComment) && (cmdType != cErr) {
 			hackCode += cmdHandlersMap[cmdType](args)
 		}
@@ -64,21 +77,25 @@ func vmToAsmTraslator(filename string) string {
 	return hackCode
 }
 
-func parsLine(line string) (Command, string) {
+// the function gets a single line from vm file and parses it - returns
+// the type of the cmd and
+func parsLine(line string) (Command, []string) {
 	for key, element := range cmdRegexMap {
 		r, _ := regexp.Compile(element)
 		if r.MatchString(line) {
-			return key, line
+			return key, strings.Split(line, " ")
 		}
 	}
-	return cErr, ""
+	return cErr, []string{}
 }
 
+// push handler - to translate vm push command
 func pushHandler(args []string) string {
 	segmant := args[1]
 	offset, _ := strconv.Atoi(args[2])
 	resString := ""
 
+	// The translation according to the different segments
 	switch segmant {
 	case "constant":
 		resString += "@" + args[2] + "\n"
@@ -101,7 +118,7 @@ func pushHandler(args []string) string {
 		resString += advanceABy(offset)
 		resString += "D = M" + "\n"
 	}
-
+	// common code for all aegments
 	resString += "@SP" + "\n"
 	resString += "A = M" + "\n"
 	resString += "M = D" + "\n"
@@ -110,13 +127,16 @@ func pushHandler(args []string) string {
 	return resString
 }
 
+// pop handler - to translate vm push command
 func popHandler(args []string) string {
 	segmant := args[1]
 
+	// common code for all aegments
 	resString := "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
 
+	// The translation according to the different segments
 	switch segmant {
 	case "pointer":
 		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
@@ -133,17 +153,22 @@ func popHandler(args []string) string {
 		resString += "A = M" + "\n"
 		resString += advanceABy(offset)
 	}
-
+	// common code for all aegments
 	resString += "M = D" + "\n"
 	resString += "@SP" + "\n"
 	resString += "M = M - 1" + "\n"
 	return resString
 }
 
+// arithmatic handler - to translate vm arithmatic commands (neg, not sub, add, or, and)
 func arithmaticHandler(args []string) string {
 	action := args[0]
+
+	// common code for all operations
 	resString := "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
+
+	// unaries operations translation (neg, not)
 	if action == "neg" {
 		resString += "M = -M" + "\n"
 		return resString
@@ -151,6 +176,7 @@ func arithmaticHandler(args []string) string {
 		resString += "M = !M" + "\n"
 		return resString
 	}
+	// binaries operations translation (add, or, sub, and)
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	if action == "sub" {
@@ -162,12 +188,15 @@ func arithmaticHandler(args []string) string {
 	} else if action == "and" {
 		resString += "M = D & M" + "\n"
 	}
+	// common code for binaries operations
 	resString += "@SP" + "\n"
 	resString += "M = M - 1" + "\n"
 	return resString
 }
 
+// comp handler - to translate vm comparison commands (eq, gt, lt)
 func compHandler(args []string) string {
+	// the labels for the commands (with numbering for identification)
 	trueLabel := "LABEL_T_" + strconv.Itoa(labelCounter)
 	endLabel := "LABEL_E_" + strconv.Itoa(labelCounter)
 	labelCounter++
@@ -201,6 +230,8 @@ func compHandler(args []string) string {
 	return resString
 }
 
+// helper function - given int n return ("A = A + 1") * n
+// (calculate offset from segment base)
 func advanceABy(offset int) string {
 	resStr := ""
 	for i := 0; i < offset; i++ {
