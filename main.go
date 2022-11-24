@@ -120,6 +120,7 @@ func popHandler(args []string) string {
 	switch segmant {
 	case "pointer":
 		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
+		resString += "A = M" + "\n"
 	case "static":
 		resString += "@" + fmt.Sprintf("%s%s%s", currentFile, ".", args[2]) + "\n"
 	case "temp":
