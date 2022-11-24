@@ -92,27 +92,19 @@ func pushHandler(args []string) string {
 
 func popHandler(args []string) string {
 	segmant := args[1]
-	offset, _ := strconv.Atoi(args[2])
 	resString := "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
-	if segmant == "pointer" {
-		if args[2] == "0" {
-			segmant = "this"
-		} else {
-			segmant = "that"
-			offset = 0
-		}
+	switch segmant {
+	case "pointer":
+		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
+	case "static":
+		resString += "@" + fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2]) + "\n"
+	default:
+		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
-	} else if segmant == "static" {
-		segmant = fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
-		resString += "@" + segmant + "\n"
-		offset = 0
-	} else {
-		resString += "@" + segmentsNameMap[segmant] + "\n"
-	}
-	for i := 0; i < offset; i++ {
-		resString += "A = A + 1" + "\n"
+		resString += advanceABy(offset)
+
 	}
 	resString += "M = D" + "\n"
 	resString += "@SP" + "\n"
@@ -188,4 +180,11 @@ func initRam() string {
 	res += "@SP\n"
 	res += "M = D\n"
 	return res
+}
+
+func advanceABy(offset int) string {
+	resStr := ""
+	for i := 0; i < offset; i++ {
+		resStr += "A = A + 1" + "\n"
+	}
 }
