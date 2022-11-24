@@ -202,12 +202,15 @@ func compHandler(args []string) string {
 	labelCounter++
 
 	action := args[0]
+	// common code to take the top 2 arguments in the stack to compare them
 	resString := "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	resString += "D = M - D" + "\n"
+	// if the comparation is true jump to true label
 	resString += "@" + trueLabel + "\n"
+	// translation acoording to the different comperations
 	if action == "eq" {
 		resString += "D;JEQ" + "\n"
 	} else if action == "gt" {
@@ -216,11 +219,13 @@ func compHandler(args []string) string {
 		resString += "D;JLT" + "\n"
 	}
 	resString += "D = 0" + "\n"
+	// if the comparation is false jump to end label
 	resString += "@" + endLabel + "\n"
 	resString += "0;JMP" + "\n"
 	resString += fmt.Sprintf("(%s)", trueLabel) + "\n"
 	resString += "D = -1" + "\n"
 	resString += fmt.Sprintf("(%s)", endLabel) + "\n"
+	// common code to update the stack and the sp
 	resString += "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "A = A - 1" + "\n"
