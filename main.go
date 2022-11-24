@@ -4,19 +4,43 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	inputFile := os.Args[1]
-	outputFile := strings.Split(inputFile, ".")[0] + ".asm"
+	pathFinder(os.Args[1])
+}
+
+func pathFinder(rootPath string) {
+	files, err := os.ReadDir(rootPath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			pathFinder(filepath.Join(rootPath, file.Name()))
+		} else {
+			r, _ := regexp.Compile(".*[.]vm")
+			if r.MatchString(file.Name()) {
+				createAsmFile(filepath.Join(rootPath, file.Name()))
+			}
+		}
+	}
+}
+
+func createAsmFile(inputFilePath string) {
+	outputFile := strings.Split(inputFilePath, ".")[0] + ".asm"
 	if _, err := os.Stat(outputFile); err == nil {
 		os.Remove(outputFile)
 	}
-	d1 := []byte(vmToAsmTraslator(inputFile))
-	os.WriteFile(outputFile, d1, 0x666)
+	d1 := []byte(vmToAsmTraslator(inputFilePath))
+	f, _ := os.Create(outputFile)
+	f.Write(d1)
+	f.Close()
 }
 
 func vmToAsmTraslator(filename string) string {
@@ -36,7 +60,7 @@ func vmToAsmTraslator(filename string) string {
 	}
 	readFile.Close()
 
-	return initRam() + hackCode
+	return hackCode
 }
 
 func parsLine(line string) (Command, string) {
@@ -63,19 +87,20 @@ func pushHandler(args []string) string {
 		resString += "A = M" + "\n"
 		resString += "D = M" + "\n"
 	case "static":
-		segmant = fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
-		resString += "@" + segmant + "\n"
+		staticLabel := fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
+		resString += "@" + staticLabel + "\n"
 		resString += "D = M" + "\n"
 	case "temp":
 		resString += "@" + segmentsNameMap[segmant] + "\n"
+		resString += advanceABy(offset)
 		resString += "D = M" + "\n"
 	default:
 		resString += "@" + segmentsNameMap[segmant] + "\n"
 		resString += "A = M" + "\n"
 		resString += advanceABy(offset)
 		resString += "D = M" + "\n"
-
 	}
+
 	resString += "@SP" + "\n"
 	resString += "A = M" + "\n"
 	resString += "M = D" + "\n"
@@ -86,19 +111,27 @@ func pushHandler(args []string) string {
 
 func popHandler(args []string) string {
 	segmant := args[1]
+
 	resString := "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
+
 	switch segmant {
 	case "pointer":
 		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
 	case "static":
 		resString += "@" + fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2]) + "\n"
-	default:
+	case "temp":
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
 		resString += advanceABy(offset)
+	default:
+		offset, _ := strconv.Atoi(args[2])
+		resString += "@" + segmentsNameMap[segmant] + "\n"
+		resString += "A = M" + "\n"
+		resString += advanceABy(offset)
 	}
+
 	resString += "M = D" + "\n"
 	resString += "@SP" + "\n"
 	resString += "M = M - 1" + "\n"
@@ -166,18 +199,10 @@ func compHandler(args []string) string {
 	return resString
 }
 
-func initRam() string {
-	res := ""
-	res += "@256\n"
-	res += "D = A\n"
-	res += "@SP\n"
-	res += "M = D\n"
-	return res
-}
-
 func advanceABy(offset int) string {
 	resStr := ""
 	for i := 0; i < offset; i++ {
 		resStr += "A = A + 1" + "\n"
 	}
+	return resStr
 }
