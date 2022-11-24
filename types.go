@@ -43,12 +43,12 @@ var cmdHandlersMap = map[Command]func([]string) string{
 }
 
 var segmentsNameMap = map[string]string{
-	"static":    "STATIC",
-	"argument":  "ARG",
-	"local":     "LCL",
-	"this":      "THIS",
-	"that":      "THAT",
-	"pointer 0": "THIS",
-	"pointer 1": "THAT",
-	"temp":      "5",
+	"static":   "STATIC",
+	"argument": "ARG",
+	"local":    "LCL",
+	"this":     "THIS",
+	"that":     "THAT",
+	"pointer0": "THIS",
+	"pointer1": "THAT",
+	"temp":     "5",
 }
