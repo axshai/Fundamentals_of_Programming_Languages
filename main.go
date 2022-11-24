@@ -26,6 +26,7 @@ func pathFinder(rootPath string) {
 		} else {
 			r, _ := regexp.Compile(".*[.]vm")
 			if r.MatchString(file.Name()) {
+				currentFile = file.Name()
 				createAsmFile(filepath.Join(rootPath, file.Name()))
 			}
 		}
@@ -87,7 +88,7 @@ func pushHandler(args []string) string {
 		resString += "A = M" + "\n"
 		resString += "D = M" + "\n"
 	case "static":
-		staticLabel := fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
+		staticLabel := fmt.Sprintf("%s%s%s", currentFile, ".", args[2])
 		resString += "@" + staticLabel + "\n"
 		resString += "D = M" + "\n"
 	case "temp":
@@ -120,7 +121,7 @@ func popHandler(args []string) string {
 	case "pointer":
 		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
 	case "static":
-		resString += "@" + fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2]) + "\n"
+		resString += "@" + fmt.Sprintf("%s%s%s", currentFile, ".", args[2]) + "\n"
 	case "temp":
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"

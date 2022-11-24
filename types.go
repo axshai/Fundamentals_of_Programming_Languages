@@ -16,6 +16,7 @@ const (
 	cErr
 )
 
+var currentFile string
 var spaces = "(\t|\\s)*"
 
 var labelCounter = 1
