@@ -53,34 +53,28 @@ func pushHandler(args []string) string {
 	segmant := args[1]
 	offset, _ := strconv.Atoi(args[2])
 	resString := ""
-	if segmant == "constant" {
+
+	switch segmant {
+	case "constant":
 		resString += "@" + args[2] + "\n"
 		resString += "D = A" + "\n"
-	} else {
-		if segmant == "pointer" {
-			if args[2] == "0" {
-				segmant = "this"
-			} else {
-				segmant = "that"
-				offset = 0
-			}
-			resString += "@" + segmentsNameMap[segmant] + "\n"
-			resString += "A = M" + "\n"
-		} else if segmant == "static" {
-			segmant = fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
-			resString += "@" + segmant + "\n"
-			offset = 0
-
-		} else {
-			resString += "@" + segmentsNameMap[segmant] + "\n"
-			if segmant != "temp" {
-				resString += "A = M" + "\n"
-			}
-		}
-		for i := 0; i < offset; i++ {
-			resString += "A = A + 1" + "\n"
-		}
+	case "pointer":
+		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
+		resString += "A = M" + "\n"
 		resString += "D = M" + "\n"
+	case "static":
+		segmant = fmt.Sprintf("%s%s%s", os.Args[1], ".", args[2])
+		resString += "@" + segmant + "\n"
+		resString += "D = M" + "\n"
+	case "temp":
+		resString += "@" + segmentsNameMap[segmant] + "\n"
+		resString += "D = M" + "\n"
+	default:
+		resString += "@" + segmentsNameMap[segmant] + "\n"
+		resString += "A = M" + "\n"
+		resString += advanceABy(offset)
+		resString += "D = M" + "\n"
+
 	}
 	resString += "@SP" + "\n"
 	resString += "A = M" + "\n"
@@ -104,7 +98,6 @@ func popHandler(args []string) string {
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
 		resString += advanceABy(offset)
-
 	}
 	resString += "M = D" + "\n"
 	resString += "@SP" + "\n"
