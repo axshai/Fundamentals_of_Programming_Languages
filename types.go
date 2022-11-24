@@ -4,7 +4,6 @@ import "fmt"
 
 type Command int
 
-// all the command types
 const (
 	cArithmetic Command = iota
 	cComp
@@ -22,7 +21,6 @@ var spaces = "(\t|\\s)*"
 
 var labelCounter = 1
 
-// map to check the command type by regex
 var cmdRegexMap = map[Command]string{
 	cArithmetic: fmt.Sprintf("^%s(add|sub|neg|and|or|not).*", spaces),
 	cComp:       fmt.Sprintf("^%s(eq|gt|lt).*", spaces),
@@ -34,7 +32,6 @@ var cmdRegexMap = map[Command]string{
 	cComment:    fmt.Sprintf("^%s//", spaces),
 }
 
-// map to Use the appropriate function for the command
 var cmdHandlersMap = map[Command]func([]string) string{
 	cArithmetic: arithmaticHandler,
 	cComp:       compHandler,
@@ -46,7 +43,6 @@ var cmdHandlersMap = map[Command]func([]string) string{
 	//cComment:     ,
 }
 
-//map to translate the segments from VM to hack
 var segmentsNameMap = map[string]string{
 	"static":   "STATIC",
 	"argument": "ARG",
