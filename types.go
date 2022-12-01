@@ -49,6 +49,7 @@ var cmdHandlersMap = map[Command]func([]string) string{
 	cLabel:      labelHandler,
 	cGoto:       gotoHandler,
 	cIfGoto:     ifGotoHndler,
+	cCall:       callHandler,
 	//cComment:     ,
 }
 

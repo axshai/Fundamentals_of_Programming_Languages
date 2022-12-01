@@ -92,7 +92,10 @@ func parsLine(line string) (Command, []string) {
 // push handler - to translate vm push command
 func pushHandler(args []string) string {
 	segmant := args[1]
-	offset, _ := strconv.Atoi(args[2])
+	offset := 0
+	if len(args) > 2 {
+		offset, _ = strconv.Atoi(args[2])
+	}
 	resString := ""
 
 	// The translation according to the different segments
@@ -110,20 +113,22 @@ func pushHandler(args []string) string {
 		resString += "D = M" + "\n"
 	case "temp":
 		resString += "@" + segmentsNameMap[segmant] + "\n"
-		resString += advanceABy(offset)
+		resString += advanceABy(offset, "+")
+		resString += "D = M" + "\n"
+	case "LCL", "ARG", "THIS", "THAT":
+		resString += "@" + args[1] + "\n"
 		resString += "D = M" + "\n"
 	default:
 		resString += "@" + segmentsNameMap[segmant] + "\n"
 		resString += "A = M" + "\n"
-		resString += advanceABy(offset)
+		resString += advanceABy(offset, "+")
 		resString += "D = M" + "\n"
 	}
 	// common code for all aegments
 	resString += "@SP" + "\n"
 	resString += "A = M" + "\n"
 	resString += "M = D" + "\n"
-	resString += "@SP" + "\n"
-	resString += "M = M + 1" + "\n"
+	resString += moveSp("+")
 	return resString
 }
 
@@ -144,17 +149,16 @@ func popHandler(args []string) string {
 	case "temp":
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
-		resString += advanceABy(offset)
+		resString += advanceABy(offset, "+")
 	default:
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
 		resString += "A = M" + "\n"
-		resString += advanceABy(offset)
+		resString += advanceABy(offset, "+")
 	}
 	// common code for all aegments
 	resString += "M = D" + "\n"
-	resString += "@SP" + "\n"
-	resString += "M = M - 1" + "\n"
+	resString += moveSp("-")
 	return resString
 }
 
@@ -183,8 +187,7 @@ func arithmaticHandler(args []string) string {
 		resString += "M = D & M" + "\n"
 	}
 	// common code for binaries operations
-	resString += "@SP" + "\n"
-	resString += "M = M - 1" + "\n"
+	resString += moveSp("-")
 	return resString
 }
 
@@ -222,8 +225,7 @@ func compHandler(args []string) string {
 	resString += "A = M - 1" + "\n"
 	resString += "A = A - 1" + "\n"
 	resString += "M = D" + "\n"
-	resString += "@SP" + "\n"
-	resString += "M = M - 1" + "\n"
+	resString += moveSp("-")
 	return resString
 }
 
@@ -237,20 +239,44 @@ func gotoHandler(args []string) string {
 }
 
 func ifGotoHndler(args []string) string {
-	resString := "@SP" + "\n" // ****look at top of stack
-	resString += "A=M-1" + "\n"
-	resString += "D=M" + "\n"
+	resString := topStackPeek()
 	resString += "@" + fileNamePrefix(args[1]) + "\n"
 	resString += "D;JNE" + "\n"
+	resString += moveSp("-")
 	return resString
 }
 
-// helper function - given int n return ("A = A + 1") * n
-// (calculate offset from segment base)
-func advanceABy(offset int) string {
+func callHandler(args []string) string {
+	retLabel := fmt.Sprint(args[1], ".", "ReturnAddress", "_", strconv.Itoa(labelCounter))
+	n, _ := strconv.Atoi(args[2])
+	segs := []string{"LCL", "ARG", "THIS", "THAT"}
+	labelCounter += 1
+
+	resString := pushHandler([]string{"push", "constant", retLabel})
+	for _, seg := range segs {
+		resString += pushHandler([]string{"push", seg})
+	}
+	resString += "@SP" + "\n"
+	resString += "A = M" + "\n"
+	resString += advanceABy(n+5, "-")
+	resString += "D = A" + "\n"
+	resString += "@ARG" + "\n"
+	resString += "M = D" + "\n"
+	resString += "@SP" + "\n"
+	resString += "D=M" + "\n"
+	resString += "@LCL" + "\n"
+	resString += "M=D" + "\n"
+	resString += gotoHandler([]string{"goto", args[1]})
+	resString += fmt.Sprint("(", retLabel, ")") + "\n"
+	return resString
+
+}
+
+// helper function - given int n return ("A = A +/- 1") * n
+func advanceABy(steps int, direction string) string {
 	resStr := ""
-	for i := 0; i < offset; i++ {
-		resStr += "A = A + 1" + "\n"
+	for i := 0; i < steps; i++ {
+		resStr += fmt.Sprintf("A = A %s 1\n", direction)
 	}
 	return resStr
 }
@@ -260,8 +286,14 @@ func fileNamePrefix(l string) string {
 }
 
 func topStackPeek() string {
-	resString := "@SP" + "\n" // ****look at top of stack
+	resString := "@SP" + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
+	return resString
+}
+
+func moveSp(direction string) string {
+	resString := "@SP" + "\n"
+	resString += fmt.Sprintf("M = M %s 1\n", direction)
 	return resString
 }
