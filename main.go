@@ -227,6 +227,24 @@ func compHandler(args []string) string {
 	return resString
 }
 
+func labelHandler(args []string) string {
+	return fmt.Sprint("(", fileNamePrefix(args[1]), ")") + "\n"
+}
+func gotoHandler(args []string) string {
+	resString := "@" + fileNamePrefix(args[1]) + "\n"
+	resString += "0;JMP" + "\n"
+	return resString
+}
+
+func ifGotoHndler(args []string) string {
+	resString := "@SP" + "\n" // ****look at top of stack
+	resString += "A=M-1" + "\n"
+	resString += "D=M" + "\n"
+	resString += "@" + fileNamePrefix(args[1]) + "\n"
+	resString += "D;JNE" + "\n"
+	return resString
+}
+
 // helper function - given int n return ("A = A + 1") * n
 // (calculate offset from segment base)
 func advanceABy(offset int) string {

@@ -12,7 +12,10 @@ const (
 	cPop
 	cLabel
 	cGoto
-	cIf
+	cIfGoto
+	cCall
+	cFunction
+	cReturn
 	cComment
 	cErr
 )
@@ -30,7 +33,10 @@ var cmdRegexMap = map[Command]string{
 	cPop:        fmt.Sprintf("^%spop.*", spaces),
 	cLabel:      fmt.Sprintf("^%slabel:.*", spaces),
 	cGoto:       fmt.Sprintf("^%sgoto.*", spaces),
-	cIf:         fmt.Sprintf("^%sif.*", spaces),
+	cIfGoto:     fmt.Sprintf("^%sif-goto.*", spaces),
+	cCall:       fmt.Sprintf("^%scall.*", spaces),
+	cFunction:   fmt.Sprintf("^%sfunction.*", spaces),
+	cReturn:     fmt.Sprintf("^%sreturn.*", spaces),
 	cComment:    fmt.Sprintf("^%s//", spaces),
 }
 
@@ -40,9 +46,9 @@ var cmdHandlersMap = map[Command]func([]string) string{
 	cComp:       compHandler,
 	cPush:       pushHandler,
 	cPop:        popHandler,
-	//cLabel:      ,
-	//cGoto:       ,
-	//cIf:         ,
+	cLabel:      labelHandler,
+	cGoto:       gotoHandler,
+	cIfGoto:     ifGotoHndler,
 	//cComment:     ,
 }
 
