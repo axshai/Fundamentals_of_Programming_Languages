@@ -105,7 +105,7 @@ func pushHandler(args []string) string {
 		resString += "A = M" + "\n"
 		resString += "D = M" + "\n"
 	case "static":
-		staticLabel := fmt.Sprintf("%s%s%s", currentFile, ".", args[2])
+		staticLabel := fileNamePrefix(args[2])
 		resString += "@" + staticLabel + "\n"
 		resString += "D = M" + "\n"
 	case "temp":
@@ -132,9 +132,7 @@ func popHandler(args []string) string {
 	segmant := args[1]
 
 	// common code for all aegments
-	resString := "@SP" + "\n"
-	resString += "A = M - 1" + "\n"
-	resString += "D = M" + "\n"
+	resString := topStackPeek()
 
 	// The translation according to the different segments
 	switch segmant {
@@ -142,7 +140,7 @@ func popHandler(args []string) string {
 		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
 		resString += "A = M" + "\n"
 	case "static":
-		resString += "@" + fmt.Sprintf("%s%s%s", currentFile, ".", args[2]) + "\n"
+		resString += "@" + fileNamePrefix(args[2]) + "\n"
 	case "temp":
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
@@ -165,19 +163,15 @@ func arithmaticHandler(args []string) string {
 	action := args[0]
 
 	// common code for all operations
-	resString := "@SP" + "\n"
-	resString += "A = M - 1" + "\n"
+	resString := topStackPeek()
 
 	// unaries operations translation (neg, not)
 	if action == "neg" {
-		resString += "M = -M" + "\n"
-		return resString
+		return resString[:strings.Index(resString, "D")] + "M = -M" + "\n"
 	} else if action == "not" {
-		resString += "M = !M" + "\n"
-		return resString
+		return resString[:strings.Index(resString, "D")] + "M = !M" + "\n"
 	}
 	// binaries operations translation (add, or, sub, and)
-	resString += "D = M" + "\n"
 	resString += "A = A - 1" + "\n"
 	if action == "sub" {
 		resString += "M = M - D" + "\n"
@@ -203,9 +197,7 @@ func compHandler(args []string) string {
 
 	action := args[0]
 	// common code to take the top 2 arguments in the stack to compare them
-	resString := "@SP" + "\n"
-	resString += "A = M - 1" + "\n"
-	resString += "D = M" + "\n"
+	resString := topStackPeek()
 	resString += "A = A - 1" + "\n"
 	resString += "D = M - D" + "\n"
 	// if the comparation is true jump to true label
@@ -243,4 +235,15 @@ func advanceABy(offset int) string {
 		resStr += "A = A + 1" + "\n"
 	}
 	return resStr
+}
+
+func fileNamePrefix(l string) string {
+	return fmt.Sprint(currentFile, ".", l)
+}
+
+func topStackPeek() string {
+	resString := "@SP" + "\n" // ****look at top of stack
+	resString += "A = M - 1" + "\n"
+	resString += "D = M" + "\n"
+	return resString
 }
