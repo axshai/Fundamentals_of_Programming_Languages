@@ -128,7 +128,7 @@ func pushHandler(args []string) string {
 	resString += "@SP" + "\n"
 	resString += "A = M" + "\n"
 	resString += "M = D" + "\n"
-	resString += moveSp("+")
+	resString += movePointer("SP", "+")
 	return resString
 }
 
@@ -137,7 +137,7 @@ func popHandler(args []string) string {
 	segmant := args[1]
 
 	// common code for all aegments
-	resString := topStackPeek()
+	resString := topStackPeek("SP")
 
 	// The translation according to the different segments
 	switch segmant {
@@ -150,6 +150,8 @@ func popHandler(args []string) string {
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
 		resString += advanceABy(offset, "+")
+	case "LCL", "ARG", "THIS", "THAT":
+		resString += "@" + segmant + "\n"
 	default:
 		offset, _ := strconv.Atoi(args[2])
 		resString += "@" + segmentsNameMap[segmant] + "\n"
@@ -158,7 +160,7 @@ func popHandler(args []string) string {
 	}
 	// common code for all aegments
 	resString += "M = D" + "\n"
-	resString += moveSp("-")
+	resString += movePointer("SP", "-")
 	return resString
 }
 
@@ -167,7 +169,7 @@ func arithmaticHandler(args []string) string {
 	action := args[0]
 
 	// common code for all operations
-	resString := topStackPeek()
+	resString := topStackPeek("SP")
 
 	// unaries operations translation (neg, not)
 	if action == "neg" {
@@ -187,7 +189,7 @@ func arithmaticHandler(args []string) string {
 		resString += "M = D & M" + "\n"
 	}
 	// common code for binaries operations
-	resString += moveSp("-")
+	resString += movePointer("SP", "-")
 	return resString
 }
 
@@ -200,7 +202,7 @@ func compHandler(args []string) string {
 
 	action := args[0]
 	// common code to take the top 2 arguments in the stack to compare them
-	resString := topStackPeek()
+	resString := topStackPeek("SP")
 	resString += "A = A - 1" + "\n"
 	resString += "D = M - D" + "\n"
 	// if the comparation is true jump to true label
@@ -225,7 +227,7 @@ func compHandler(args []string) string {
 	resString += "A = M - 1" + "\n"
 	resString += "A = A - 1" + "\n"
 	resString += "M = D" + "\n"
-	resString += moveSp("-")
+	resString += movePointer("SP", "-")
 	return resString
 }
 
@@ -239,10 +241,10 @@ func gotoHandler(args []string) string {
 }
 
 func ifGotoHndler(args []string) string {
-	resString := topStackPeek()
+	resString := topStackPeek("SP")
 	resString += "@" + fileNamePrefix(args[1]) + "\n"
 	resString += "D;JNE" + "\n"
-	resString += moveSp("-")
+	resString += movePointer("SP", "-")
 	return resString
 }
 
@@ -265,13 +267,55 @@ func callHandler(args []string) string {
 	resString += "@SP" + "\n"
 	resString += "D=M" + "\n"
 	resString += "@LCL" + "\n"
-	resString += "M=D" + "\n"
+	resString += "M = D" + "\n"
 	resString += gotoHandler([]string{"goto", args[1]})
 	resString += fmt.Sprint("(", retLabel, ")") + "\n"
 	return resString
 
 }
 
+func functionHandler(args []string) string {
+	k, _ := strconv.Atoi(args[2])
+	resString := fmt.Sprint("(", fileNamePrefix(args[1]), ")") + "\n"
+	for i := 0; i < k; i++ {
+		resString += pushHandler([]string{"push", "constant", "0"})
+	}
+
+	return resString
+}
+
+func returnHandler(args []string) string {
+	segs := []string{"THAT", "THIS", "ARG", "LCL"}
+	// FRAME = LCL
+	resString := "@LCL" + "\n"
+	resString += "D = M" + "\n"
+	// RAM[13] = (LOCAL - 5)
+	resString += "@5" + "\n"
+	resString += "A=D-A" + "\n"
+	resString += "D=M" + "\n"
+	resString += "@13" + "\n"
+	resString += "M=D" + "\n"
+	// *ARG = pop() - put ret value in its place
+	resString += popHandler([]string{"pop", "argument", "0"})
+	// SP = ARG+1
+	resString += "@ARG" + "\n"
+	resString += "D = M" + "\n"
+	resString += "@SP" + "\n"
+	resString += "M = D + 1" + "\n"
+	// SEGMENTS = *(FRAM-i): i=1...5
+
+	for _, seg := range segs {
+		resString += restoreSegmants(seg)
+	}
+
+	// goto RET
+	resString += "@13" + "\n"
+	resString += "A=M" + "\n"
+	resString += "0;JMP" + "\n"
+	return resString
+}
+
+// ---------------------------------------------------------------------------------------
 // helper function - given int n return ("A = A +/- 1") * n
 func advanceABy(steps int, direction string) string {
 	resStr := ""
@@ -285,15 +329,23 @@ func fileNamePrefix(l string) string {
 	return fmt.Sprint(currentFile, ".", l)
 }
 
-func topStackPeek() string {
-	resString := "@SP" + "\n"
+func topStackPeek(topPointer string) string {
+	resString := "@" + topPointer + "\n"
 	resString += "A = M - 1" + "\n"
 	resString += "D = M" + "\n"
 	return resString
 }
 
-func moveSp(direction string) string {
-	resString := "@SP" + "\n"
+func movePointer(pointer string, direction string) string {
+	resString := "@" + pointer + "\n"
 	resString += fmt.Sprintf("M = M %s 1\n", direction)
+	return resString
+}
+
+func restoreSegmants(seg string) string {
+	resString := topStackPeek("LCL")
+	resString += "@" + seg + "\n"
+	resString += "M = D" + "\n"
+	resString += movePointer("LCL", "-")
 	return resString
 }

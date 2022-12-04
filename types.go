@@ -50,6 +50,9 @@ var cmdHandlersMap = map[Command]func([]string) string{
 	cGoto:       gotoHandler,
 	cIfGoto:     ifGotoHndler,
 	cCall:       callHandler,
+	cFunction:   functionHandler,
+	cReturn:     returnHandler,
+
 	//cComment:     ,
 }
 
