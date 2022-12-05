@@ -18,12 +18,10 @@ func main() {
 // and for each folder that contains vm file it triggers the compilation process to create asm file
 // in the same folder.
 func pathFinder(rootPath string) {
-	outR, _ := regexp.Compile(".*[.]cmp")
-	asmR, _ := regexp.Compile(".*[.]asm")
-	vmR, _ := regexp.Compile(".*[.]vm")
-	initVmR, _ := regexp.Compile(".*[.]vm")
+	hackCode := []byte{}
 	outPutFile := ""
-	vmFiles := []string{}
+	vmR, _ := regexp.Compile(".*[.]vm")
+	outR, _ := regexp.Compile(".*[.]cmp")
 	files, err := os.ReadDir(rootPath)
 	if err != nil {
 		fmt.Println(err)
@@ -35,38 +33,34 @@ func pathFinder(rootPath string) {
 			pathFinder(filepath.Join(rootPath, item.Name()))
 			// if it is a vm file - trigger the compilation process to create asm file
 		} else {
-			if outR.MatchString(item.Name()) {
+			if vmR.MatchString(item.Name()) {
+				currentFile = item.Name()
+				if item.Name() != "Sys.vm" {
+					hackCode = append(hackCode, vmToAsmTraslator(filepath.Join(rootPath, item.Name()))...)
+				} else {
+					hackCode = append(vmToAsmTraslator(filepath.Join(rootPath, item.Name())), hackCode...)
+				}
+			} else if outR.MatchString(item.Name()) {
 				outPutFile = item.Name()[:strings.Index(item.Name(), ".cmp")]
 				outPutFile = filepath.Join(rootPath, outPutFile)
-			} else if asmR.MatchString(item.Name()) {
-				os.Remove(filepath.Join(rootPath, item.Name()))
-			} else if initVmR.MatchString(item.Name()) {
-				vmFiles = append([]string{filepath.Join(rootPath, item.Name())}, vmFiles...)
-				currentFile = item.Name()
-			} else if vmR.MatchString(item.Name()) {
-				vmFiles = append(vmFiles, filepath.Join(rootPath, item.Name()))
-				currentFile = item.Name()
-			}
-			if len(outPutFile) > 0 {
-				createAsmFile(vmFiles, outPutFile)
 			}
 		}
+	}
+	if len(outPutFile) > 0 {
+		fmt.Println("hi")
+		createAsmFile(outPutFile, hackCode)
 	}
 }
 
 // The function recives a path to the vm file - calls to the translator,
 // and writes the the resulting hack code to asm file.
-func createAsmFile(inputFilesPath []string, outputFileName string) {
-	outputFile := outputFileName + ".asm"
-	hackCode := []byte{}
+func createAsmFile(inputFilePath string, hackCode []byte) {
+	outputFile := strings.Split(inputFilePath, ".")[0] + ".asm"
 	// Clean from files from previous runs
 	if _, err := os.Stat(outputFile); err == nil {
 		os.Remove(outputFile)
 	}
 	// translte (compile) the file.
-	for _, file := range inputFilesPath {
-		hackCode = append(hackCode, []byte(vmToAsmTraslator(file))...)
-	}
 	f, _ := os.Create(outputFile)
 	f.Write(hackCode)
 	f.Close()
@@ -74,7 +68,7 @@ func createAsmFile(inputFilesPath []string, outputFileName string) {
 
 // The function recives a path a to vm file, and returns string which is the translation
 // of this file to hack code
-func vmToAsmTraslator(filename string) string {
+func vmToAsmTraslator(filename string) []byte {
 	readFile, err := os.Open(filename)
 	var hackCode string
 	if err != nil {
@@ -93,7 +87,7 @@ func vmToAsmTraslator(filename string) string {
 	}
 	readFile.Close()
 
-	return hackCode
+	return []byte(hackCode)
 }
 
 // the function gets a single line from vm file and parses it - returns
