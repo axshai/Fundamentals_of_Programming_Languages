@@ -124,7 +124,6 @@ func pushHandler(args []string) string {
 		resString += "D = A" + "\n"
 	case "pointer":
 		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
-		resString += "A = M" + "\n"
 		resString += "D = M" + "\n"
 	case "static":
 		staticLabel := fileNamePrefix(args[2])
@@ -162,7 +161,6 @@ func popHandler(args []string) string {
 	switch segmant {
 	case "pointer":
 		resString += "@" + segmentsNameMap[segmant+args[2]] + "\n"
-		resString += "A = M" + "\n"
 	case "static":
 		resString += "@" + fileNamePrefix(args[2]) + "\n"
 	case "temp":
@@ -261,9 +259,9 @@ func gotoHandler(args []string) string {
 
 func ifGotoHndler(args []string) string {
 	resString := topStackPeek("SP")
+	resString += movePointer("SP", "-")
 	resString += "@" + fileNamePrefix(args[1]) + "\n"
 	resString += "D;JNE" + "\n"
-	resString += movePointer("SP", "-")
 	return resString
 }
 
@@ -365,6 +363,8 @@ func restoreSegmants(seg string) string {
 	resString := topStackPeek("LCL")
 	resString += "@" + seg + "\n"
 	resString += "M = D" + "\n"
-	resString += movePointer("LCL", "-")
+	if seg != "LCL" {
+		resString += movePointer("LCL", "-")
+	}
 	return resString
 }
