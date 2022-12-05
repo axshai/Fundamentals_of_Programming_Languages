@@ -279,7 +279,8 @@ func callHandler(args []string) string {
 	resString += "D=M" + "\n"
 	resString += "@LCL" + "\n"
 	resString += "M = D" + "\n"
-	resString += gotoHandler([]string{"goto", args[1]})
+	resString += "@" + args[1] + "\n"
+	resString += "0;JMP" + "\n"
 	resString += fmt.Sprint("(", retLabel, ")") + "\n"
 	return resString
 
@@ -287,7 +288,7 @@ func callHandler(args []string) string {
 
 func functionHandler(args []string) string {
 	k, _ := strconv.Atoi(args[2])
-	resString := fmt.Sprint("(", fileNamePrefix(args[1]), ")") + "\n"
+	resString := fmt.Sprint("(", args[1], ")") + "\n"
 	for i := 0; i < k; i++ {
 		resString += pushHandler([]string{"push", "constant", "0"})
 	}
@@ -337,7 +338,7 @@ func advanceABy(steps int, direction string) string {
 }
 
 func fileNamePrefix(l string) string {
-	return fmt.Sprint(currentFile, ".", l)
+	return fmt.Sprint(strings.Split(currentFile, ".")[0], ".", l)
 }
 
 func topStackPeek(topPointer string) string {
