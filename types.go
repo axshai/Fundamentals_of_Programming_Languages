@@ -31,7 +31,7 @@ var cmdRegexMap = map[Command]string{
 	cComp:       fmt.Sprintf("^%s(eq|gt|lt).*", spaces),
 	cPush:       fmt.Sprintf("^%spush.*", spaces),
 	cPop:        fmt.Sprintf("^%spop.*", spaces),
-	cLabel:      fmt.Sprintf("^%slabel:.*", spaces),
+	cLabel:      fmt.Sprintf("^%slabel.*", spaces),
 	cGoto:       fmt.Sprintf("^%sgoto.*", spaces),
 	cIfGoto:     fmt.Sprintf("^%sif-goto.*", spaces),
 	cCall:       fmt.Sprintf("^%scall.*", spaces),
