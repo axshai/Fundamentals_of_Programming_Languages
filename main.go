@@ -15,7 +15,7 @@ func main() {
 }
 
 // The function recives a path to the project root folder (e.g. pro 7)
-// and for each folder that contains vm file it triggers the compilation process to create asm file
+// and for each folder that contains vm files it triggers the compilation process to create asm file
 // in the same folder.
 func pathFinder(rootPath string) {
 	hackCode := []byte{}
@@ -31,42 +31,47 @@ func pathFinder(rootPath string) {
 		// if it is a dir: make recursive call
 		if item.IsDir() {
 			pathFinder(filepath.Join(rootPath, item.Name()))
-			// if it is a vm file - trigger the compilation process to create asm file
+			// else - it is a vm files directory
 		} else {
+			// if it is a vm file - translate it to hack and concatenate it to the already generated hack code
 			if vmR.MatchString(item.Name()) {
 				currentFile = item.Name()
 				if item.Name() != "Sys.vm" {
 					hackCode = append(hackCode, vmToAsmTraslator(filepath.Join(rootPath, item.Name()))...)
+					// if it is the Sys.vm file - concatenate it to the begin of the hack code
 				} else {
 					hackCode = append(vmToAsmTraslator(filepath.Join(rootPath, item.Name())), hackCode...)
 				}
+				// if it is the .cmp file - extract from it the name of the asm file
+				//(the name of the asm and the cmp are the same)
 			} else if outR.MatchString(item.Name()) {
-				outPutFile = item.Name()[:strings.Index(item.Name(), ".cmp")]
+				outPutFile = item.Name()
 				outPutFile = filepath.Join(rootPath, outPutFile)
 			}
 		}
 	}
+	// if outPutFile isnt empty - it was vm folder - need to createasm file
 	if len(outPutFile) > 0 {
 		fmt.Println("hi")
 		createAsmFile(outPutFile, hackCode)
 	}
 }
 
-// The function recives a path to the vm file - calls to the translator,
-// and writes the the resulting hack code to asm file.
+// The function recives a desired name of asm file and a slice of byte with hack code,
+// create the asm, and writes to him the hack code.
 func createAsmFile(inputFilePath string, hackCode []byte) {
 	outputFile := strings.Split(inputFilePath, ".")[0] + ".asm"
 	// Clean from files from previous runs
 	if _, err := os.Stat(outputFile); err == nil {
 		os.Remove(outputFile)
 	}
-	// translte (compile) the file.
+	// createthe file and write the hack code
 	f, _ := os.Create(outputFile)
 	f.Write(hackCode)
 	f.Close()
 }
 
-// The function recives a path a to vm file, and returns string which is the translation
+// The function recives a path a to vm file, and returns slice of byte which is the translation
 // of this file to hack code
 func vmToAsmTraslator(filename string) []byte {
 	readFile, err := os.Open(filename)
@@ -337,10 +342,13 @@ func advanceABy(steps int, direction string) string {
 	return resStr
 }
 
+// helper function - given a label L returns currentFileName.L
 func fileNamePrefix(l string) string {
 	return fmt.Sprint(strings.Split(currentFile, ".")[0], ".", l)
 }
 
+// helper function - returns hack code to put in D the last value
+// (relative to the recived pointer) from the stack
 func topStackPeek(topPointer string) string {
 	resString := "@" + topPointer + "\n"
 	resString += "A = M - 1" + "\n"
@@ -348,12 +356,15 @@ func topStackPeek(topPointer string) string {
 	return resString
 }
 
+// helper function - moves the recived pointer up/down (according to 'direction')
 func movePointer(pointer string, direction string) string {
 	resString := "@" + pointer + "\n"
 	resString += fmt.Sprintf("M = M %s 1\n", direction)
 	return resString
 }
 
+// helper function - code for restore the segments values
+// during return from function flow
 func restoreSegmants(seg string) string {
 	resString := topStackPeek("LCL")
 	resString += "@" + seg + "\n"
