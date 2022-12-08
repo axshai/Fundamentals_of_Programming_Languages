@@ -247,15 +247,19 @@ func compHandler(args []string) string {
 	return resString
 }
 
+// label handler - to translate vm labels to asm
 func labelHandler(args []string) string {
 	return fmt.Sprint("(", fileNamePrefix(args[1]), ")") + "\n"
 }
+
+// goto handler - to translate vm goto to asm
 func gotoHandler(args []string) string {
 	resString := "@" + fileNamePrefix(args[1]) + "\n"
 	resString += "0;JMP" + "\n"
 	return resString
 }
 
+// if goto handler - to translate vm if goto to asm
 func ifGotoHndler(args []string) string {
 	resString := topStackPeek("SP")
 	resString += movePointer("SP", "-")
@@ -264,36 +268,46 @@ func ifGotoHndler(args []string) string {
 	return resString
 }
 
+// call handler - to translate vm call command to asm
 func callHandler(args []string) string {
+	// label for return address
 	retLabel := fmt.Sprint(args[1], ".", "ReturnAddress", "_", strconv.Itoa(labelCounter))
-	n, _ := strconv.Atoi(args[2])
+	n, _ := strconv.Atoi(args[2]) // num of arguments
 	segs := []string{"LCL", "ARG", "THIS", "THAT"}
 	labelCounter += 1
 
 	resString := pushHandler([]string{"push", "constant", retLabel})
+	// save all previous segments values
 	for _, seg := range segs {
 		resString += pushHandler([]string{"push", seg})
 	}
+
+	// put in ARG the value for this function
 	resString += "@SP" + "\n"
 	resString += "A = M" + "\n"
 	resString += advanceABy(n+5, "-")
 	resString += "D = A" + "\n"
 	resString += "@ARG" + "\n"
 	resString += "M = D" + "\n"
+	// put in LCL the value for this function
 	resString += "@SP" + "\n"
-	resString += "D=M" + "\n"
+	resString += "D = M" + "\n"
 	resString += "@LCL" + "\n"
 	resString += "M = D" + "\n"
+	// jmp to the function
 	resString += "@" + args[1] + "\n"
 	resString += "0;JMP" + "\n"
+	// put the return address label in it's place
 	resString += fmt.Sprint("(", retLabel, ")") + "\n"
 	return resString
 
 }
 
+// // function handler - to translate vm function declaration to asm
 func functionHandler(args []string) string {
-	k, _ := strconv.Atoi(args[2])
+	k, _ := strconv.Atoi(args[2]) // num of locals
 	resString := fmt.Sprint("(", args[1], ")") + "\n"
+	// initial locals place with zero
 	for i := 0; i < k; i++ {
 		resString += pushHandler([]string{"push", "constant", "0"})
 	}
@@ -301,6 +315,7 @@ func functionHandler(args []string) string {
 	return resString
 }
 
+// return handler - to translate vm return command to asm
 func returnHandler(args []string) string {
 	segs := []string{"THAT", "THIS", "ARG", "LCL"}
 	// FRAME = LCL
@@ -319,8 +334,8 @@ func returnHandler(args []string) string {
 	resString += "D = M" + "\n"
 	resString += "@SP" + "\n"
 	resString += "M = D + 1" + "\n"
-	// SEGMENTS = *(FRAM-i): i=1...5
 
+	// SEGMENTS = *(FRAM-i): i=1...5
 	for _, seg := range segs {
 		resString += restoreSegmants(seg)
 	}
@@ -348,7 +363,7 @@ func fileNamePrefix(l string) string {
 }
 
 // helper function - returns hack code to put in D the last value
-// (relative to the recived pointer) from the stack
+// (relative to the recived pointer) from the memory
 func topStackPeek(topPointer string) string {
 	resString := "@" + topPointer + "\n"
 	resString += "A = M - 1" + "\n"
