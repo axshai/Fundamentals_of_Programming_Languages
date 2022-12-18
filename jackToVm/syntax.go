@@ -14,7 +14,8 @@ type Toknizer struct {
 
 func newToknizer(fileName string, jackFile string) Toknizer {
 	f, _ := os.OpenFile(fileName+".xml", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	tokensString, _ := os.ReadFile(jackFile)
+	tokens, _ := os.ReadFile(jackFile)
+	tokensString := string(strings.TrimSpace(string(tokens)))
 	f.WriteString("<tokens>\n")
 	return Toknizer{file: f, tokensString: string(tokensString)}
 }
@@ -30,11 +31,12 @@ func (t Toknizer) closeToknizer() {
 }
 
 func (t *Toknizer) nextToken() (token, string) {
-	for key, element := range tokenRegexMap {
-		r, _ := regexp.Compile(element)
+	for _, key := range []token{comment, stringConstant, keyword, symbol, identifier, integerConstant} {
+		r, _ := regexp.Compile(tokenRegexMap[key])
 		if r.MatchString(t.tokensString) {
 			token := r.FindString(t.tokensString)
 			t.tokensString = t.tokensString[strings.Index(t.tokensString, token)+len(token):]
+			t.tokensString = strings.TrimSpace(t.tokensString)
 			return key, token
 		}
 	}
@@ -45,8 +47,20 @@ func (t Toknizer) isThereMoreTokens() bool {
 	return t.tokensString != ""
 }
 
-func Index(s, token string) {
-	panic("unimplemented")
+func translateToken(token string) string {
+	if token == "<" {
+		token = "&lt;"
+	}
+	if token == ">" {
+		token = "&gt;"
+	}
+	if token == "&" {
+		token = "&amp;"
+	}
+	if match, _ := regexp.MatchString(`".*"`, token); match {
+		token = strings.ReplaceAll(token, `"`, "")
+	}
+	return token
 }
 
 type token int
@@ -58,20 +72,21 @@ const (
 	identifier
 	stringConstant
 	comment
+	b
 	err
 )
 
 // map to check the token type type by regex
 var tokenRegexMap = map[token]string{
-	keyword:         `\b(?:class|method|function|constructor|int|boolean|char|void|var|static|field|let|do|if|else|while|return|true|false|null|this)\b`,
-	symbol:          "{|}|[|]|(|)|.|,|;|+|-|*|/|&|<|>|=|~|[|]",
-	integerConstant: "[0-9]+",
-	identifier:      "^[a-zA-Z_][a-zA-Z_0-9]*",
-	stringConstant:  "\"[^\n^\"]*\"",
-	comment:         `//.*\n"|/*.**/`,
+	keyword:         `^(\b(?:class|method|function|constructor|int|boolean|char|void|var|static|field|let|do|if|else|while|return|true|false|null|this)\b)`,
+	symbol:          `^({|}|\[|\]|\(|\)|\.|,|;|\+|-|\*|\/|&|\||<|>|=|~)`,
+	integerConstant: "^([0-9])+",
+	identifier:      "^([a-zA-Z_][a-zA-Z_0-9]*)",
+	stringConstant:  "^(\"[^\n^\"]*\")",
+	comment:         `^((//.*\n)|(/\*.*\*/))`,
 }
 
-var tokenNameMap = map[token]string{
+var tokenTypeMap = map[token]string{
 	keyword:         "keyword",
 	symbol:          "symbol",
 	integerConstant: "integerConstant",
