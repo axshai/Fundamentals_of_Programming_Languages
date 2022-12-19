@@ -9,7 +9,7 @@ import (
 
 var currentFile string
 
-// the
+// Toknizer - Responsible for parsing jack file to tokens
 type Toknizer struct {
 	file         *os.File
 	tokensString string
@@ -91,7 +91,6 @@ const (
 	stringConstant
 	comment
 	multiComment
-	b
 	err
 )
 

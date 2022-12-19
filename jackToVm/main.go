@@ -52,7 +52,7 @@ func jackToTokensTraslator(inputFile string, outputFile string) {
 	t := newToknizer(outputFile, inputFile)
 	for t.isThereMoreTokens() {
 		typ, token := t.nextToken()
-		if typ != comment && typ != multiComment && typ != b {
+		if typ != comment && typ != multiComment && typ != err {
 			t.writeToken(tokenTypeMap[typ], translateToken(token))
 		}
 	}
