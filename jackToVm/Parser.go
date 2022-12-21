@@ -61,7 +61,6 @@ func (p *syntaxParser) decreasIndentation() {
 
 func (p syntaxParser) writeToken(tokentType string, token string) {
 	strToken := fmt.Sprintf("%s<%s> %s </%s>", p.indentations, tokentType, token, tokentType)
-	fmt.Printf("%s<%s> %s </%s>\n", p.indentations, tokentType, token, tokentType)
 	p.outFile.WriteString(strToken + "\n")
 }
 
@@ -69,12 +68,10 @@ func (p *syntaxParser) writeBlockTag(blockName string, closeTag bool) {
 	tag := ""
 	if !closeTag {
 		tag = fmt.Sprintf("%s<%s>", p.indentations, blockName)
-		fmt.Printf("%s<%s>\n", p.indentations, blockName)
 		p.increasIndentation()
 	} else {
 		p.decreasIndentation()
 		tag = fmt.Sprintf("%s</%s>", p.indentations, blockName)
-		fmt.Printf("%s</%s>\n", p.indentations, blockName)
 	}
 	p.outFile.WriteString(tag + "\n")
 }
@@ -96,9 +93,7 @@ func parseClass(p syntaxParser) {
 
 func ParseClassVarDec(p *syntaxParser) {
 	tType, token := p.getNextToken()
-	flag := false
 	for token == "static" || token == "field" {
-		flag = true
 		p.writeBlockTag("classVarDec", false)
 		p.writeToken(tType, token)     // field || static
 		p.writeToken(p.getNextToken()) //<keyword> int </keyword> || <identifier> className </identifier>
@@ -111,19 +106,15 @@ func ParseClassVarDec(p *syntaxParser) {
 		}
 		p.backToPrevToken()
 		p.writeToken(p.getNextToken()) //<identifier> ; </identifier>
+		p.writeBlockTag("classVarDec", true)
 		tType, token = p.getNextToken()
 	}
 	p.backToPrevToken()
-	if flag {
-		p.writeBlockTag("classVarDec", true)
-	}
 }
 
 func ParseSubRoutineDec(p *syntaxParser) {
 	tType, token := p.getNextToken()
-	flag := false
 	for token == "constructor" || token == "method" || token == "function" {
-		flag = true
 		p.writeBlockTag("subroutineDec", false)
 		p.writeToken(tType, token)     // method || constructor || function
 		p.writeToken(p.getNextToken()) //<keyword> type </keyword>
@@ -132,12 +123,10 @@ func ParseSubRoutineDec(p *syntaxParser) {
 		ParseParameterList(p)
 		p.writeToken(p.getNextToken()) //<symbol> ) </symbol>
 		ParseSubRoutineBody(p)
+		p.writeBlockTag("subroutineDec", true)
 		tType, token = p.getNextToken()
 	}
 	p.backToPrevToken()
-	if flag {
-		p.writeBlockTag("subroutineDec", true)
-	}
 }
 
 func ParseParameterList(p *syntaxParser) {
@@ -147,7 +136,7 @@ func ParseParameterList(p *syntaxParser) {
 		p.writeToken(tType, token)     //<keyword> type </keyword>
 		p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
 		tType, token = p.getNextToken()
-		for token == " , " {
+		for token == "," {
 			p.writeToken(tType, token)     // <symbol> , </symbol>
 			p.writeToken(p.getNextToken()) //<keyword> type </keyword>
 			p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
@@ -194,21 +183,15 @@ func ParseStatments(p *syntaxParser) {
 	var handler func(*syntaxParser, string, string)
 	tType, token := p.getNextToken()
 	exists := false
-	flag := false
-	if handler, exists = statmentHandlersMap[token]; exists {
-		p.writeBlockTag("statements", false)
-		flag = true
-	}
+	p.writeBlockTag("statements", false)
+	handler, exists = statmentHandlersMap[token]
 	for exists {
 		handler(p, tType, token)
 		tType, token = p.getNextToken()
 		handler, exists = statmentHandlersMap[token]
 	}
 	p.backToPrevToken()
-	if flag {
-		p.writeBlockTag("statements", true)
-	}
-
+	p.writeBlockTag("statements", true)
 }
 
 func letStatment(p *syntaxParser, tType string, token string) {
@@ -273,7 +256,9 @@ func returnStatment(p *syntaxParser, tType string, token string) {
 	p.writeToken(tType, token) // return
 	tType, token = p.getNextToken()
 	if token != ";" {
+		p.backToPrevToken()
 		ParseExpression(p)
+		tType, token = p.getNextToken()
 	}
 	p.writeToken(tType, token) // ;
 	p.writeBlockTag("returnStatement", true)
