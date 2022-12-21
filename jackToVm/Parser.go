@@ -284,7 +284,7 @@ func ParseExpression(p *syntaxParser) {
 	p.writeBlockTag("expression", false)
 	ParseTerm(p)
 	tType, token := p.getNextToken()
-	for strings.Contains("+-*/&amp|&lt&gt=", token) {
+	for strings.Contains("+-*/|=", token) || token == "&amp;" || token == "&gt;" || token == "&lt;" {
 		p.writeToken(tType, token)
 		ParseTerm(p)
 		tType, token = p.getNextToken()
