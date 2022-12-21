@@ -21,7 +21,7 @@ func newToknizer(fileName string, jackFile string) Toknizer {
 	f, _ := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	tokens, _ := os.ReadFile(jackFile)
 	// delete the spacess
-	tokensString := string(strings.TrimSpace(string(tokens)))
+	tokensString := strings.TrimSpace(string(tokens))
 	//the root of the xml file
 	f.WriteString("<tokens>\n")
 	return Toknizer{file: f, tokensString: string(tokensString)}
