@@ -44,10 +44,14 @@ func pathFinder(rootPath string) {
 // and translate the jack file into tokens inside xml file in the output file
 func jackToTokensTraslator(inputFile string, outputFile string) {
 	toknizerOutputFile := outputFile + "Tk.xml"
+	parserOutputFile := outputFile + "k.xml"
 	fmt.Println(toknizerOutputFile)
 	// Clean from files from previous runs
 	if _, err := os.Stat(toknizerOutputFile); err == nil {
 		os.Remove(toknizerOutputFile)
+	}
+	if _, err := os.Stat(parserOutputFile); err == nil {
+		os.Remove(parserOutputFile)
 	}
 	// create the tokenizer struct to translate the file
 	t := newToknizer(toknizerOutputFile, inputFile)
@@ -58,4 +62,7 @@ func jackToTokensTraslator(inputFile string, outputFile string) {
 		}
 	}
 	t.closeToknizer()
+	p := newParser(parserOutputFile, toknizerOutputFile)
+	parseClass(p)
+	p.closeToknizer()
 }
