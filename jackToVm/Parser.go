@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 )
 
 type syntaxParser struct {
@@ -58,9 +59,9 @@ func (p *syntaxParser) decreasIndentation() {
 	p.indentations = p.indentations[:len(p.indentations)-2]
 }
 
-// how can we now the tokenType?
 func (p syntaxParser) writeToken(tokentType string, token string) {
 	strToken := fmt.Sprintf("%s<%s> %s </%s>", p.indentations, tokentType, token, tokentType)
+	fmt.Printf("<%s> %s </%s>\n", tokentType, token, tokentType)
 	p.outFile.WriteString(strToken + "\n")
 }
 
@@ -94,14 +95,14 @@ func parseClass(p syntaxParser) {
 func ParseClassVarDec(p syntaxParser) {
 	tType, token := p.getNextToken()
 	flag := false
-	for token == "static" || token == "field" {
+	for token == " static " || token == " field " {
 		flag = true
 		p.writeBlockTag("classVarDec", false)
 		p.writeToken(tType, token)     // field || static
 		p.writeToken(p.getNextToken()) //<keyword> int </keyword> || <identifier> className </identifier>
 		p.writeToken(p.getNextToken()) //<identifier> x </identifier>
 		tType, token = p.getNextToken()
-		for token == "," {
+		for token == " , " {
 			p.writeToken(tType, token)     // <symbol> , </symbol>
 			p.writeToken(p.getNextToken()) //<identifier> y </identifier>
 			tType, token = p.getNextToken()
@@ -119,7 +120,7 @@ func ParseClassVarDec(p syntaxParser) {
 func ParseSubRoutineDec(p syntaxParser) {
 	tType, token := p.getNextToken()
 	flag := false
-	for token == "constructor" || token == "method" || token == "function" {
+	for token == " constructor " || token == " method " || token == " function " {
 		flag = true
 		p.writeBlockTag("subroutineDec", false)
 		p.writeToken(tType, token)     // method || constructor || function
@@ -129,6 +130,7 @@ func ParseSubRoutineDec(p syntaxParser) {
 		ParseParameterList(p)
 		p.writeToken(p.getNextToken())  //<symbol> ) </symbol>
 		tType, token = p.getNextToken() // method || constructor || function
+		ParseSubRoutineBody(p)
 	}
 	p.backToPrevToken()
 	if flag {
@@ -139,11 +141,11 @@ func ParseSubRoutineDec(p syntaxParser) {
 func ParseParameterList(p syntaxParser) {
 	tType, token := p.getNextToken()
 	p.writeBlockTag("parameterList", false)
-	for token == "int" || token == "void" || token == "char" || token == "boolean" {
+	for token == " int " || token == " void " || token == " char " || token == " boolean " {
 		p.writeToken(tType, token)     //<keyword> type </keyword>
 		p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
 		tType, token = p.getNextToken()
-		for token == "," {
+		for token == " , " {
 			p.writeToken(tType, token)     // <symbol> , </symbol>
 			p.writeToken(p.getNextToken()) //<keyword> type </keyword>
 			p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
@@ -169,16 +171,16 @@ func ParseSubRoutineBody(p syntaxParser) {
 func ParsevarDec(p syntaxParser) {
 	tType, token := p.getNextToken()
 	flag := false
-	if token == "var" {
+	if token == " var " {
 		p.writeBlockTag("varDec", false)
 		flag = true
 	}
-	for token == "var" {
+	for token == " var " {
 		p.writeToken(tType, token)     //<keyword> var </keyword>
 		p.writeToken(p.getNextToken()) //<keyword> type </keyword>
 		p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
 		tType, token = p.getNextToken()
-		for token == "," {
+		for token == " , " {
 			p.writeToken(tType, token)     // <symbol> , </symbol>
 			p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
 			tType, token = p.getNextToken()
@@ -217,7 +219,7 @@ func letStatment(p syntaxParser, tType string, token string) {
 	p.writeBlockTag("letStatement", false)
 	p.writeToken(tType, token) //<identifier> varName </identifier>
 	tType, token = p.getNextToken()
-	if token == "[" {
+	if token == " [ " {
 		p.writeToken(tType, token)
 		ParseExpression(p)
 		p.writeToken(p.getNextToken())
@@ -234,7 +236,79 @@ func doStatment(p syntaxParser, tType string, token string)     {}
 func returnStatment(p syntaxParser, tType string, token string) {}
 
 func ParseExpression(p syntaxParser) {
+	p.writeBlockTag("expression", false)
+	ParseTerm(p)
+	tType, token := p.getNextToken()
+	for strings.Contains("+-*/&|<>=", strings.TrimSpace(token)) {
+		p.writeToken(tType, token)
+		ParseTerm(p)
+		tType, token = p.getNextToken()
+	}
+	p.backToPrevToken()
+	p.writeBlockTag("expression", true)
+}
 
+func ParseTerm(p syntaxParser) {
+	p.writeBlockTag("term", false)
+	tType, token := p.getNextToken()
+	switch tType {
+	case tokenTypeMap[integerConstant], tokenTypeMap[stringConstant], tokenTypeMap[keyword]:
+		p.writeToken(tType, token)
+	case tokenTypeMap[symbol]:
+		if token == " - " || token == " ~ " {
+			p.writeToken(tType, token)
+			ParseTerm(p)
+		} else { // (
+			p.writeToken(tType, token)
+			ParseExpression(p)
+			p.writeToken(p.getNextToken()) // )
+		}
+	case tokenTypeMap[identifier]:
+		tType1, token1 := p.getNextToken()
+		if token == " ( " || token == " . " {
+			p.backToPrevToken()
+			p.backToPrevToken()
+			ParseSubRoutineCall(p)
+		} else if token == " [ " {
+			p.writeToken(tType, token)
+			p.writeToken(tType1, token1)
+			ParseExpression(p)
+			p.writeToken(p.getNextToken())
+		} else {
+			p.writeToken(tType, token)
+			p.backToPrevToken()
+		}
+	}
+	p.writeBlockTag("term", true)
+}
+
+func ParseSubRoutineCall(p syntaxParser) {
+	//p.writeBlockTag("subRoutineCall", false)
+	p.writeToken(p.getNextToken())
+	tType, token := p.getNextToken()
+	p.writeToken(tType, token)
+	if token == " ( " {
+		ParseExpressionList(p)
+		p.writeToken(p.getNextToken()) // )
+	} else { // .
+		p.writeToken(p.getNextToken()) // routineName
+		p.writeToken(p.getNextToken()) // (
+		ParseExpressionList(p)
+		p.writeToken(p.getNextToken()) // )
+	}
+	//p.writeBlockTag("subRoutineCall", true)
+}
+func ParseExpressionList(p syntaxParser) {
+	p.writeBlockTag("expressionList", false)
+	ParseExpression(p)
+	tType, token := p.getNextToken()
+	for token == " , " {
+		p.writeToken(tType, token) // <symbol> , </symbol>
+		ParseExpression(p)
+		tType, token = p.getNextToken()
+	}
+	p.backToPrevToken()
+	p.writeBlockTag("expressionList", true)
 }
 
 var statmentHandlersMap = map[string]func(syntaxParser, string, string){
