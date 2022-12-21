@@ -213,7 +213,7 @@ func ParseStatments(p *syntaxParser) {
 
 func letStatment(p *syntaxParser, tType string, token string) {
 	p.writeBlockTag("letStatement", false)
-	p.writeToken(tType, token)     //<identifier> let </identifier>
+	p.writeToken(tType, token)     //let
 	p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
 	tType, token = p.getNextToken()
 	if token == "[" {
@@ -226,18 +226,65 @@ func letStatment(p *syntaxParser, tType string, token string) {
 	ParseExpression(p)
 	p.writeToken(p.getNextToken()) //;
 	p.writeBlockTag("letStatement", true)
+}
+
+func ifStatment(p *syntaxParser, tType string, token string) {
+	p.writeBlockTag("ifStatement", false)
+	p.writeToken(tType, token)     // if
+	p.writeToken(p.getNextToken()) //(
+	ParseExpression(p)
+	p.writeToken(p.getNextToken()) //)
+	p.writeToken(p.getNextToken()) //{
+	ParseStatments(p)
+	p.writeToken(p.getNextToken()) //}
+	tType, token = p.getNextToken()
+	if token == "else" {
+		p.writeToken(tType, token)     //else
+		p.writeToken(p.getNextToken()) //{
+		ParseStatments(p)
+		p.writeToken(p.getNextToken()) //}
+	} else {
+		p.backToPrevToken()
+	}
+	p.writeBlockTag("ifStatement", true)
+}
+func whileStatment(p *syntaxParser, tType string, token string) {
+	p.writeBlockTag("whileStatement", false)
+	p.writeToken(tType, token)     // while
+	p.writeToken(p.getNextToken()) //(
+	ParseExpression(p)
+	p.writeToken(p.getNextToken()) //)
+	p.writeToken(p.getNextToken()) //{
+	ParseStatments(p)
+	p.writeToken(p.getNextToken()) //}
+	p.writeBlockTag("whileStatement", true)
 
 }
-func ifStatment(p *syntaxParser, tType string, token string)     {}
-func whileStatment(p *syntaxParser, tType string, token string)  {}
-func doStatment(p *syntaxParser, tType string, token string)     {}
-func returnStatment(p *syntaxParser, tType string, token string) {}
+func doStatment(p *syntaxParser, tType string, token string) {
+	p.writeBlockTag("doStatement", false)
+	p.writeToken(tType, token) // do
+	ParseSubRoutineCall(p)
+	p.writeToken(p.getNextToken()) // ;
+	p.writeBlockTag("doStatement", true)
+
+}
+func returnStatment(p *syntaxParser, tType string, token string) {
+	p.writeBlockTag("returnStatement", false)
+	p.writeToken(tType, token) // return
+	tType, token = p.getNextToken()
+	if token != ";" {
+		ParseExpression(p)
+	}
+	p.writeToken(tType, token) // ;
+	p.writeBlockTag("returnStatement", true)
+
+}
 
 func ParseExpression(p *syntaxParser) {
 	p.writeBlockTag("expression", false)
 	ParseTerm(p)
 	tType, token := p.getNextToken()
-	for strings.Contains("+-*/&|<>=", token) {
+	for strings.Contains("+-*/&amp|&lt&gt=", token) {
 		p.writeToken(tType, token)
 		ParseTerm(p)
 		tType, token = p.getNextToken()
@@ -309,10 +356,4 @@ func ParseExpressionList(p *syntaxParser) {
 	p.writeBlockTag("expressionList", true)
 }
 
-var statmentHandlersMap = map[string]func(*syntaxParser, string, string){
-	"let":    letStatment,
-	"if":     ifStatment,
-	"while":  whileStatment,
-	"do":     doStatment,
-	"return": returnStatment,
-}
+var statmentHandlersMap = map[string]func(*syntaxParser, string, string){}

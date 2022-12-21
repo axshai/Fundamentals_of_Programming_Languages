@@ -62,7 +62,16 @@ func jackToTokensTraslator(inputFile string, outputFile string) {
 		}
 	}
 	t.closeToknizer()
+	initParsFuncs()
 	p := newParser(parserOutputFile, toknizerOutputFile)
 	parseClass(p)
 	p.closeToknizer()
+}
+
+func initParsFuncs() {
+	statmentHandlersMap["let"] = letStatment
+	statmentHandlersMap["if"] = ifStatment
+	statmentHandlersMap["while"] = whileStatment
+	statmentHandlersMap["do"] = doStatment
+	statmentHandlersMap["return"] = returnStatment
 }
