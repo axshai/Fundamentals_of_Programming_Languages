@@ -132,6 +132,7 @@ func ParseSubRoutineDec(p *syntaxParser) {
 		ParseParameterList(p)
 		p.writeToken(p.getNextToken()) //<symbol> ) </symbol>
 		ParseSubRoutineBody(p)
+		tType, token = p.getNextToken()
 	}
 	p.backToPrevToken()
 	if flag {
@@ -166,7 +167,6 @@ func ParseSubRoutineBody(p *syntaxParser) {
 	ParseStatments(p)
 	p.writeToken(p.getNextToken()) // <symbol> }</symbol>
 	p.writeBlockTag("subroutineBody", true)
-
 }
 
 func ParsevarDec(p *syntaxParser) {
