@@ -345,14 +345,18 @@ func ParseSubRoutineCall(p *syntaxParser) {
 }
 func ParseExpressionList(p *syntaxParser) {
 	p.writeBlockTag("expressionList", false)
-	ParseExpression(p)
-	tType, token := p.getNextToken()
-	for token == "," {
-		p.writeToken(tType, token) // <symbol> , </symbol>
-		ParseExpression(p)
-		tType, token = p.getNextToken()
-	}
+	_, token := p.getNextToken()
 	p.backToPrevToken()
+	if token != ")" {
+		ParseExpression(p)
+		tType, token := p.getNextToken()
+		for token == "," {
+			p.writeToken(tType, token) // <symbol> , </symbol>
+			ParseExpression(p)
+			tType, token = p.getNextToken()
+		}
+		p.backToPrevToken()
+	}
 	p.writeBlockTag("expressionList", true)
 }
 
