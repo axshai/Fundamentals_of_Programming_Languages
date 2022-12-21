@@ -86,13 +86,13 @@ func parseClass(p syntaxParser) {
 	p.writeToken(p.getNextToken()) //class
 	p.writeToken(p.getNextToken()) // class name
 	p.writeToken(p.getNextToken()) // {
-	ParseClassVarDec(p)
-	ParseSubRoutineDec(p)
+	ParseClassVarDec(&p)
+	ParseSubRoutineDec(&p)
 	p.writeToken(p.getNextToken()) // }
 	p.writeBlockTag("class", true)
 }
 
-func ParseClassVarDec(p syntaxParser) {
+func ParseClassVarDec(p *syntaxParser) {
 	tType, token := p.getNextToken()
 	flag := false
 	for token == " static " || token == " field " {
@@ -117,7 +117,7 @@ func ParseClassVarDec(p syntaxParser) {
 	}
 }
 
-func ParseSubRoutineDec(p syntaxParser) {
+func ParseSubRoutineDec(p *syntaxParser) {
 	tType, token := p.getNextToken()
 	flag := false
 	for token == " constructor " || token == " method " || token == " function " {
@@ -128,8 +128,7 @@ func ParseSubRoutineDec(p syntaxParser) {
 		p.writeToken(p.getNextToken()) //<identifier> funcNmae </identifier>
 		p.writeToken(p.getNextToken()) //<symbol> ( </symbol>
 		ParseParameterList(p)
-		p.writeToken(p.getNextToken())  //<symbol> ) </symbol>
-		tType, token = p.getNextToken() // method || constructor || function
+		p.writeToken(p.getNextToken()) //<symbol> ) </symbol>
 		ParseSubRoutineBody(p)
 	}
 	p.backToPrevToken()
@@ -138,7 +137,7 @@ func ParseSubRoutineDec(p syntaxParser) {
 	}
 }
 
-func ParseParameterList(p syntaxParser) {
+func ParseParameterList(p *syntaxParser) {
 	tType, token := p.getNextToken()
 	p.writeBlockTag("parameterList", false)
 	for token == " int " || token == " void " || token == " char " || token == " boolean " {
@@ -158,7 +157,7 @@ func ParseParameterList(p syntaxParser) {
 	p.writeBlockTag("parameterList", true)
 
 }
-func ParseSubRoutineBody(p syntaxParser) {
+func ParseSubRoutineBody(p *syntaxParser) {
 	p.writeBlockTag("subroutineBody", false)
 	p.writeToken(p.getNextToken()) // <symbol> {</symbol>
 	ParsevarDec(p)
@@ -168,14 +167,10 @@ func ParseSubRoutineBody(p syntaxParser) {
 
 }
 
-func ParsevarDec(p syntaxParser) {
+func ParsevarDec(p *syntaxParser) {
 	tType, token := p.getNextToken()
-	flag := false
-	if token == " var " {
-		p.writeBlockTag("varDec", false)
-		flag = true
-	}
 	for token == " var " {
+		p.writeBlockTag("varDec", false)
 		p.writeToken(tType, token)     //<keyword> var </keyword>
 		p.writeToken(p.getNextToken()) //<keyword> type </keyword>
 		p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
@@ -187,20 +182,18 @@ func ParsevarDec(p syntaxParser) {
 		}
 		p.backToPrevToken()
 		p.writeToken(p.getNextToken()) //<keyword> ; </keyword>
+		p.writeBlockTag("varDec", true)
 		tType, token = p.getNextToken()
 	}
 	p.backToPrevToken()
-	if flag {
-		p.writeBlockTag("varDec", true)
-	}
 }
 
-func ParseStatments(p syntaxParser) {
-	var handler func(syntaxParser, string, string)
+func ParseStatments(p *syntaxParser) {
+	var handler func(*syntaxParser, string, string)
 	tType, token := p.getNextToken()
 	exists := false
 	flag := false
-	if handler, exists = statmentHandlersMap[token]; exists {
+	if handler, exists = statmentHandlersMap[strings.TrimSpace(token)]; exists {
 		p.writeBlockTag("statements", false)
 		flag = true
 	}
@@ -215,7 +208,7 @@ func ParseStatments(p syntaxParser) {
 
 }
 
-func letStatment(p syntaxParser, tType string, token string) {
+func letStatment(p *syntaxParser, tType string, token string) {
 	p.writeBlockTag("letStatement", false)
 	p.writeToken(tType, token) //<identifier> varName </identifier>
 	tType, token = p.getNextToken()
@@ -230,12 +223,12 @@ func letStatment(p syntaxParser, tType string, token string) {
 	p.writeToken(p.getNextToken()) //;
 
 }
-func ifStatment(p syntaxParser, tType string, token string)     {}
-func whileStatment(p syntaxParser, tType string, token string)  {}
-func doStatment(p syntaxParser, tType string, token string)     {}
-func returnStatment(p syntaxParser, tType string, token string) {}
+func ifStatment(p *syntaxParser, tType string, token string)     {}
+func whileStatment(p *syntaxParser, tType string, token string)  {}
+func doStatment(p *syntaxParser, tType string, token string)     {}
+func returnStatment(p *syntaxParser, tType string, token string) {}
 
-func ParseExpression(p syntaxParser) {
+func ParseExpression(p *syntaxParser) {
 	p.writeBlockTag("expression", false)
 	ParseTerm(p)
 	tType, token := p.getNextToken()
@@ -248,7 +241,7 @@ func ParseExpression(p syntaxParser) {
 	p.writeBlockTag("expression", true)
 }
 
-func ParseTerm(p syntaxParser) {
+func ParseTerm(p *syntaxParser) {
 	p.writeBlockTag("term", false)
 	tType, token := p.getNextToken()
 	switch tType {
@@ -282,7 +275,7 @@ func ParseTerm(p syntaxParser) {
 	p.writeBlockTag("term", true)
 }
 
-func ParseSubRoutineCall(p syntaxParser) {
+func ParseSubRoutineCall(p *syntaxParser) {
 	//p.writeBlockTag("subRoutineCall", false)
 	p.writeToken(p.getNextToken())
 	tType, token := p.getNextToken()
@@ -298,7 +291,7 @@ func ParseSubRoutineCall(p syntaxParser) {
 	}
 	//p.writeBlockTag("subRoutineCall", true)
 }
-func ParseExpressionList(p syntaxParser) {
+func ParseExpressionList(p *syntaxParser) {
 	p.writeBlockTag("expressionList", false)
 	ParseExpression(p)
 	tType, token := p.getNextToken()
@@ -311,7 +304,7 @@ func ParseExpressionList(p syntaxParser) {
 	p.writeBlockTag("expressionList", true)
 }
 
-var statmentHandlersMap = map[string]func(syntaxParser, string, string){
+var statmentHandlersMap = map[string]func(*syntaxParser, string, string){
 	"let":    letStatment,
 	"if":     ifStatment,
 	"while":  whileStatment,
