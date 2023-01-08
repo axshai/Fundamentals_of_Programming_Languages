@@ -149,9 +149,9 @@ func letStatment(p *syntaxParser) {
 	_, token := p.lookahead(1)
 	if token == "[" {
 		isArray = true
-		vw.writePushCmd(methodScopeTable.search(name).varSeg, methodScopeTable.search(name).varIndex)
 		p.writeToken(p.getNextToken()) // [
 		ParseExpression(p)
+		vw.writePushCmd(methodScopeTable.search(name).varSeg, methodScopeTable.search(name).varIndex)
 		vw.writeArithmeticCmd("+")
 		p.writeToken(p.getNextToken()) // ]
 		_, token = p.lookahead(1)
@@ -279,10 +279,10 @@ func ParseTerm(p *syntaxParser) {
 			ParseSubRoutineCall(p)
 		} else if token1 == "[" {
 			_, tName := p.lookahead(1)
-			vw.writePushCmd(methodScopeTable.search(tName).varSeg, methodScopeTable.search(tName).varIndex)
 			p.writeToken(p.getNextToken()) // varName
 			p.writeToken(p.getNextToken()) // [
 			ParseExpression(p)
+			vw.writePushCmd(methodScopeTable.search(tName).varSeg, methodScopeTable.search(tName).varIndex)
 			vw.writeArithmeticCmd("+")
 			vw.writePopCmd("pointer", 1)
 			vw.writePushCmd("that", 0)
