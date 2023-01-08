@@ -133,37 +133,57 @@ func ParseStatments(p *syntaxParser) {
 }
 
 func letStatment(p *syntaxParser) {
+	isArray := false
 	p.writeBlockTag("letStatement", false)
 	p.writeToken(p.getNextToken()) //let
+	name := getSecondvalue(p.lookahead(1))
 	p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
 	_, token := p.lookahead(1)
 	if token == "[" {
+		isArray = true
+		vw.writePushCmd(methodScopeTable.search(name).varSeg, methodScopeTable.search(name).varIndex)
 		p.writeToken(p.getNextToken()) // [
 		ParseExpression(p)
+		vw.writeArithmeticCmd("+")
+		vw.writePopCmd("pointer", 1)
 		p.writeToken(p.getNextToken()) // ]
 		_, token = p.lookahead(1)
 	}
 	p.writeToken(p.getNextToken()) // =
 	ParseExpression(p)
+	if isArray {
+		vw.writePopCmd("that", 0)
+	} else {
+		vw.writePopCmd(methodScopeTable.search(name).varSeg, methodScopeTable.search(name).varIndex)
+	}
 	p.writeToken(p.getNextToken()) //;
 	p.writeBlockTag("letStatement", true)
 }
 
 func ifStatment(p *syntaxParser) {
+	L1 := vw.generateLabelSofix("L1")
+	L2 := vw.generateLabelSofix("L2")
 	p.writeBlockTag("ifStatement", false)
 	p.writeToken(p.getNextToken()) // if
 	p.writeToken(p.getNextToken()) //(
 	ParseExpression(p)
+	vw.writeArithmeticCmd("~")
+	vw.writeIfGoTo(L1)
 	p.writeToken(p.getNextToken()) //)
 	p.writeToken(p.getNextToken()) //{
 	ParseStatments(p)
 	p.writeToken(p.getNextToken()) //}
 	_, token := p.lookahead(1)
 	if token == "else" {
+		vw.writeGoTo(L2)
+	}
+	vw.writeLabel(L1)
+	if token == "else" {
 		p.writeToken(p.getNextToken()) //else
 		p.writeToken(p.getNextToken()) //{
 		ParseStatments(p)
 		p.writeToken(p.getNextToken()) //}
+		vw.writeLabel(L2)
 	}
 	p.writeBlockTag("ifStatement", true)
 }
@@ -172,10 +192,17 @@ func whileStatment(p *syntaxParser) {
 	p.writeBlockTag("whileStatement", false)
 	p.writeToken(p.getNextToken()) // while
 	p.writeToken(p.getNextToken()) //(
+	L1 := vw.generateLabelSofix("L1")
+	L2 := vw.generateLabelSofix("L2")
+	vw.writeLabel(L1)
 	ParseExpression(p)
+	vw.writeArithmeticCmd("~")
+	vw.writeIfGoTo(L2)
 	p.writeToken(p.getNextToken()) //)
 	p.writeToken(p.getNextToken()) //{
 	ParseStatments(p)
+	vw.writeGoTo(L1)
+	vw.writeLabel(L2)
 	p.writeToken(p.getNextToken()) //}
 	p.writeBlockTag("whileStatement", true)
 
@@ -184,6 +211,7 @@ func doStatment(p *syntaxParser) {
 	p.writeBlockTag("doStatement", false)
 	p.writeToken(p.getNextToken()) // do
 	ParseSubRoutineCall(p)
+	vw.writePopCmd("temp", 0)
 	p.writeToken(p.getNextToken()) // ;
 	p.writeBlockTag("doStatement", true)
 
@@ -195,7 +223,10 @@ func returnStatment(p *syntaxParser) {
 	if token != ";" {
 		ParseExpression(p)
 		_, token = p.lookahead(1)
+	} else {
+		vw.writePushCmd("constant", 0)
 	}
+	vw.writeReturn()
 	p.writeToken(p.getNextToken()) // ;
 	p.writeBlockTag("returnStatement", true)
 
@@ -255,34 +286,40 @@ func ParseTerm(p *syntaxParser) {
 }
 
 func ParseSubRoutineCall(p *syntaxParser) {
-	//p.writeBlockTag("subRoutineCall", false)
+	numArgs := 0
+	name := getSecondvalue(p.lookahead(1))
 	p.writeToken(p.getNextToken()) // routineName | className
 	_, token := p.lookahead(1)
 	p.writeToken(p.getNextToken()) // ( | .
 	if token == "(" {
-		ParseExpressionList(p)
+		numArgs = ParseExpressionList(p)
 		p.writeToken(p.getNextToken()) // )
 	} else { // .
+		name += "." + getSecondvalue(p.lookahead(1))
 		p.writeToken(p.getNextToken()) // routineName
 		p.writeToken(p.getNextToken()) // (
-		ParseExpressionList(p)
+		numArgs = ParseExpressionList(p)
 		p.writeToken(p.getNextToken()) // )
 	}
-	//p.writeBlockTag("subRoutineCall", true)
+	vw.writeCallCmd(name, numArgs)
 }
-func ParseExpressionList(p *syntaxParser) {
+func ParseExpressionList(p *syntaxParser) int {
+	counter := 0
 	p.writeBlockTag("expressionList", false)
 	_, token := p.lookahead(1)
 	if token != ")" {
+		counter++
 		ParseExpression(p)
 		_, token := p.lookahead(1)
 		for token == "," {
 			p.writeToken(p.getNextToken()) // <symbol> , </symbol>
+			counter++
 			ParseExpression(p)
 			_, token = p.lookahead(1)
 		}
 	}
 	p.writeBlockTag("expressionList", true)
+	return counter
 }
 
 var statmentHandlersMap = map[string]func(*syntaxParser){}

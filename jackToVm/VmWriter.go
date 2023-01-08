@@ -10,7 +10,8 @@ var vw VmWriter
 
 // Toknizer - Responsible for parsing jack file to tokens
 type VmWriter struct {
-	file *os.File
+	file         *os.File
+	labelCounter int
 }
 
 func newVmWriter(fileName string) VmWriter {
@@ -56,6 +57,28 @@ func (v VmWriter) writePopCmd(seg string, index int) {
 	v.file.WriteString(fmt.Sprintf("pop %s %d\n", seg, index))
 }
 
+func (v VmWriter) writeGoTo(label string) {
+	v.file.WriteString(fmt.Sprintf("goto %s\n", label))
+}
+
+func (v VmWriter) writeIfGoTo(label string) {
+	v.file.WriteString(fmt.Sprintf("if-goto %s\n", label))
+}
+
+func (v VmWriter) writeLabel(label string) {
+	v.file.WriteString(fmt.Sprintf("label %s\n", label))
+}
+
+func (v VmWriter) writeReturn() {
+	v.file.WriteString("return\n")
+}
+
+func (v *VmWriter) generateLabelSofix(label string) string {
+	label = label + strconv.Itoa(v.labelCounter)
+	v.labelCounter++
+	return label
+}
+
 func (v VmWriter) closeVmWriter() {
 	v.file.Close()
 }
@@ -70,6 +93,7 @@ var opMap = map[string]string{
 	"&lt;":  "lt",
 	"&gt;":  "gt",
 	"=":     "eq",
+	"~":     "not",
 }
 
 var keywordConstMap = map[string]int{
