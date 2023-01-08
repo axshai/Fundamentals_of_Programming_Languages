@@ -8,7 +8,26 @@ import (
 	"strings"
 )
 
+var currentFile string
+
 func main() {
+	// t := Table{}
+	// t.insert("temp0", "int", "local")
+	// t.insert("temp1", "int", "local")
+	// t.insert("temp2", "int", "argument")
+	// t.insert("temp3", "int", "argument")
+	// t.insert("temp4", "int", "local")
+	// t.insert("temp5", "int", "local")
+	// fmt.Println(t["temp3"].varType)
+	// fmt.Println(t["temp3"].varSeg)
+	// fmt.Println(t["temp3"].varIndex)
+
+	// fmt.Println(t["temp4"].varType)
+	// fmt.Println(t["temp4"].varSeg)
+	// fmt.Println(t["temp4"].varIndex)
+	// fmt.Println(t.countType("local"))
+	// fmt.Println(t.countType("argument"))
+	// t.printTable()
 	pathFinder(os.Args[1])
 }
 
@@ -45,6 +64,7 @@ func pathFinder(rootPath string) {
 func jackToTokensTraslator(inputFile string, outputFile string) {
 	toknizerOutputFile := outputFile + "Tk.xml"
 	parserOutputFile := outputFile + "k.xml"
+	vmFileoutput := outputFile + ".vm"
 	fmt.Println(toknizerOutputFile)
 	// Clean from files from previous runs
 	if _, err := os.Stat(toknizerOutputFile); err == nil {
@@ -63,6 +83,8 @@ func jackToTokensTraslator(inputFile string, outputFile string) {
 	}
 	t.closeToknizer()
 	initParsFuncs()
+	classScopeTable = Table{}
+	vw = newVmWriter(vmFileoutput)
 	p := newParser(parserOutputFile, toknizerOutputFile)
 	parseClass(p)
 	p.closeToknizer()
