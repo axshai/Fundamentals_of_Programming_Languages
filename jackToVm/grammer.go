@@ -153,14 +153,17 @@ func letStatment(p *syntaxParser) {
 		p.writeToken(p.getNextToken()) // [
 		ParseExpression(p)
 		vw.writeArithmeticCmd("+")
-		vw.writePopCmd("pointer", 1)
 		p.writeToken(p.getNextToken()) // ]
 		_, token = p.lookahead(1)
 	}
 	p.writeToken(p.getNextToken()) // =
 	ParseExpression(p)
 	if isArray {
+		vw.writePopCmd("temp", 0)
+		vw.writePopCmd("pointer", 1)
+		vw.writePushCmd("temp", 0)
 		vw.writePopCmd("that", 0)
+
 	} else {
 		vw.writePopCmd(methodScopeTable.search(name).varSeg, methodScopeTable.search(name).varIndex)
 	}
