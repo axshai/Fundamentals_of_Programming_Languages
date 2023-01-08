@@ -61,7 +61,8 @@ func (p *syntaxParser) lookahead(steps int) (string, string) {
 		return "", ""
 	}
 	tType, token := p.tokensBuffer[p.lineNumber+steps-1][0], p.tokensBuffer[p.lineNumber+steps-1][1]
-	return tType, strings.TrimSpace(token)
+	token = strings.TrimLeft(token, " ")
+	return tType, token[:len(token)-1]
 }
 
 // function to manage indentations in the syntax xml file - increase the indentations
