@@ -46,11 +46,13 @@ func ParseClassVarDec(p *syntaxParser) {
 func ParseSubRoutineDec(p *syntaxParser) {
 	_, token := p.lookahead(1)
 	for token == "constructor" || token == "method" || token == "function" {
-		isMethod := token == "method"
-		methodScopeTable = newMethodScopeTable(isMethod)
+		vw.currentMethod.mthodType = token
+		methodScopeTable = newMethodScopeTable(vw.currentMethod.mthodType)
 		p.writeBlockTag("subroutineDec", false)
 		p.writeToken(p.getNextToken()) // method || constructor || function
 		p.writeToken(p.getNextToken()) //<keyword> type </keyword>
+
+		vw.currentMethod.name = getSecondvalue(p.lookahead(1))
 		p.writeToken(p.getNextToken()) //<identifier> funcNmae </identifier>
 		p.writeToken(p.getNextToken()) //<symbol> ( </symbol>
 		ParseParameterList(p)
@@ -89,6 +91,12 @@ func ParseSubRoutineBody(p *syntaxParser) {
 	p.writeBlockTag("subroutineBody", false)
 	p.writeToken(p.getNextToken()) // <symbol> {</symbol>
 	ParsevarDec(p)
+	vw.currentMethod.localsNum = methodScopeTable.countSeg("local")
+	vw.writeFuncDec()
+	if vw.currentMethod.mthodType == "method" {
+		vw.writePushCmd("argument", 0)
+		vw.writePopCmd("pointer", 0)
+	}
 	ParseStatments(p)
 	p.writeToken(p.getNextToken()) // <symbol> }</symbol>
 	p.writeBlockTag("subroutineBody", true)

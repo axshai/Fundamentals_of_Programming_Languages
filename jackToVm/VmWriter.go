@@ -6,17 +6,24 @@ import (
 	"strconv"
 )
 
+type MethodDetails struct {
+	name      string
+	localsNum int
+	mthodType string
+}
+
 var vw VmWriter
 
 // Toknizer - Responsible for parsing jack file to tokens
 type VmWriter struct {
-	file         *os.File
-	labelCounter int
+	file          *os.File
+	labelCounter  int
+	currentMethod MethodDetails
 }
 
 func newVmWriter(fileName string) VmWriter {
 	f, _ := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	return VmWriter{file: f}
+	return VmWriter{file: f, labelCounter: 0, currentMethod: MethodDetails{}}
 }
 
 func (v VmWriter) writeConstantsPushCmd(token string, constType string) {
@@ -70,7 +77,14 @@ func (v VmWriter) writeLabel(label string) {
 }
 
 func (v VmWriter) writeReturn() {
+	if vw.currentMethod.mthodType == "constructor" {
+		v.writePushCmd("pointer", 0)
+	}
 	v.file.WriteString("return\n")
+}
+
+func (v VmWriter) writeFuncDec() {
+	v.file.WriteString(fmt.Sprintf("function %s.%s %d\n", className, v.currentMethod.name, v.currentMethod.localsNum))
 }
 
 func (v *VmWriter) generateLabelSofix(label string) string {

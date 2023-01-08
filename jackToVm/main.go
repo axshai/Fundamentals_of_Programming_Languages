@@ -88,6 +88,7 @@ func jackToTokensTraslator(inputFile string, outputFile string) {
 	p := newParser(parserOutputFile, toknizerOutputFile)
 	parseClass(p)
 	p.closeToknizer()
+	vw.closeVmWriter()
 }
 
 func initParsFuncs() {

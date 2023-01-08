@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 type Row struct {
 	varType  string
 	varSeg   string
@@ -16,22 +12,16 @@ func (t *Table) insert(name string, ttype string, seg string) {
 	if _, isTablaContainsVar := (*t)[name]; isTablaContainsVar {
 		return
 	}
-	index := 0
-	for _, row := range *t {
-		if row.varSeg == seg {
-			index++
-		}
-	}
-	(*t)[name] = Row{varType: ttype, varSeg: seg, varIndex: index}
+	(*t)[name] = Row{varType: ttype, varSeg: seg, varIndex: t.countSeg(seg)}
 }
 
-func (t Table) printTable() {
-	columns := []string{"type:", "seg:", "index:"}
-	fmt.Println("name:", "\t", columns)
-	for name, row := range t {
-		fmt.Println(name, "\t", row)
-	}
-}
+// func (t Table) printTable() {
+// 	columns := []string{"type:", "seg:", "index:"}
+// 	fmt.Println("name:", "\t", columns)
+// 	for name, row := range t {
+// 		fmt.Println(name, "\t", row)
+// 	}
+// }
 
 func (t Table) search(name string) Row {
 	if _, isTablaContainsVar := t[name]; isTablaContainsVar {
@@ -44,9 +34,19 @@ func (t Table) search(name string) Row {
 	}
 }
 
-func newMethodScopeTable(isMethod bool) Table {
+func (t Table) countSeg(seg string) int {
+	counter := 0
+	for _, row := range t {
+		if row.varSeg == seg {
+			counter++
+		}
+	}
+	return counter
+}
+
+func newMethodScopeTable(methodType string) Table {
 	methodScopeTable := Table{}
-	if isMethod {
+	if methodType == "method" {
 		methodScopeTable.insert("this", className, "argument")
 	}
 	return methodScopeTable
