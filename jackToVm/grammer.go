@@ -60,14 +60,14 @@ func ParseSubRoutineDec(p *syntaxParser) {
 		ParseSubRoutineBody(p)
 		p.writeBlockTag("subroutineDec", true)
 		_, token = p.lookahead(1)
-		//methodScopeTable.printTable()
+		methodScopeTable.printTable()
 	}
 }
 
 func ParseParameterList(p *syntaxParser) {
-	_, token := p.lookahead(1)
+	ttype, token := p.lookahead(1)
 	p.writeBlockTag("parameterList", false)
-	for token == "int" || token == "char" || token == "boolean" {
+	for token == "int" || token == "char" || token == "boolean" || ttype == tokenTypeMap[identifier] {
 		p.writeToken(p.getNextToken()) //<keyword> type </keyword>
 		name := getSecondvalue(p.lookahead(1))
 		methodScopeTable.insert(name, token, "argument")
@@ -82,7 +82,7 @@ func ParseParameterList(p *syntaxParser) {
 			p.writeToken(p.getNextToken()) //<identifier> varName </identifier>
 			_, token = p.lookahead(1)
 		}
-		_, token = p.lookahead(1)
+		ttype, token = p.lookahead(1)
 	}
 	p.writeBlockTag("parameterList", true)
 
