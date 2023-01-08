@@ -293,9 +293,10 @@ func ParseTerm(p *syntaxParser) {
 	p.writeBlockTag("term", true)
 }
 
-func ParseSubRoutineCall(p *syntaxParser) {
+func ParseSubRoutineCall(p *syntaxParser) { // ***********************check
 	numArgs := 0
-	name := getSecondvalue(p.lookahead(1))
+	objNmaeCandidate := getSecondvalue(p.lookahead(1))
+	name := className + "." + getSecondvalue(p.lookahead(1))
 	p.writeToken(p.getNextToken()) // routineName | className
 	_, token := p.lookahead(1)
 	p.writeToken(p.getNextToken()) // ( | .
@@ -303,7 +304,10 @@ func ParseSubRoutineCall(p *syntaxParser) {
 		numArgs = ParseExpressionList(p)
 		p.writeToken(p.getNextToken()) // )
 	} else { // .
-		name += "." + getSecondvalue(p.lookahead(1))
+		if methodScopeTable.search(objNmaeCandidate).varType != "" {
+			vw.writePushCmd(methodScopeTable.search(objNmaeCandidate).varSeg, methodScopeTable.search(objNmaeCandidate).varIndex)
+		}
+		name = objNmaeCandidate + "." + getSecondvalue(p.lookahead(1))
 		p.writeToken(p.getNextToken()) // routineName
 		p.writeToken(p.getNextToken()) // (
 		numArgs = ParseExpressionList(p)
