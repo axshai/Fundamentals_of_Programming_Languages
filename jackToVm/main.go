@@ -73,6 +73,9 @@ func jackToTokensTraslator(inputFile string, outputFile string) {
 	if _, err := os.Stat(parserOutputFile); err == nil {
 		os.Remove(parserOutputFile)
 	}
+	if _, err := os.Stat(vmFileoutput); err == nil {
+		os.Remove(vmFileoutput)
+	}
 	// create the tokenizer struct to translate the file
 	t := newToknizer(toknizerOutputFile, inputFile)
 	for t.isThereMoreTokens() {
