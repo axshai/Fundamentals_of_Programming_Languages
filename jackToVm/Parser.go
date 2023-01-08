@@ -95,7 +95,7 @@ func (p *syntaxParser) writeBlockTag(blockName string, isCloseTag bool) {
 	p.outFile.WriteString(tag + "\n")
 }
 
-// function to finish the toknizer
+// function to finish the Parser
 func (p syntaxParser) closeToknizer() {
 	p.outFile.Close()
 }
