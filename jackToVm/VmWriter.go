@@ -53,8 +53,12 @@ func (v VmWriter) writeCallCmd(funcNmae string, numOfArgs int) {
 	v.file.WriteString(fmt.Sprintf("call %s %d\n", funcNmae, numOfArgs))
 }
 
-func (v VmWriter) writeArithmeticCmd(jackOp string) {
-	v.file.WriteString(opMap[jackOp] + "\n")
+func (v VmWriter) writeArithmeticCmd(jackOp string, isUnary bool) {
+	if isUnary && jackOp == "-" {
+		v.file.WriteString("neg" + "\n")
+	} else {
+		v.file.WriteString(opMap[jackOp] + "\n")
+	}
 }
 
 func (v VmWriter) writePushCmd(seg string, index int) {

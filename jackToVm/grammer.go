@@ -152,7 +152,7 @@ func letStatment(p *syntaxParser) {
 		p.writeToken(p.getNextToken()) // [
 		ParseExpression(p)
 		vw.writePushCmd(methodScopeTable.search(name).varSeg, methodScopeTable.search(name).varIndex)
-		vw.writeArithmeticCmd("+")
+		vw.writeArithmeticCmd("+", false)
 		p.writeToken(p.getNextToken()) // ]
 		_, token = p.lookahead(1)
 	}
@@ -178,7 +178,7 @@ func ifStatment(p *syntaxParser) {
 	p.writeToken(p.getNextToken()) // if
 	p.writeToken(p.getNextToken()) //(
 	ParseExpression(p)
-	vw.writeArithmeticCmd("~")
+	vw.writeArithmeticCmd("~", true)
 	vw.writeIfGoTo(L1)
 	p.writeToken(p.getNextToken()) //)
 	p.writeToken(p.getNextToken()) //{
@@ -207,7 +207,7 @@ func whileStatment(p *syntaxParser) {
 	L2 := vw.generateLabelSofix("L2")
 	vw.writeLabel(L1)
 	ParseExpression(p)
-	vw.writeArithmeticCmd("~")
+	vw.writeArithmeticCmd("~", true)
 	vw.writeIfGoTo(L2)
 	p.writeToken(p.getNextToken()) //)
 	p.writeToken(p.getNextToken()) //{
@@ -250,7 +250,7 @@ func ParseExpression(p *syntaxParser) {
 	for strings.Contains("+-*/|=", token) || token == "&amp;" || token == "&gt;" || token == "&lt;" {
 		p.writeToken(p.getNextToken()) // +-*/|=><&
 		ParseTerm(p)
-		vw.writeArithmeticCmd(token)
+		vw.writeArithmeticCmd(token, false)
 		_, token = p.lookahead(1)
 	}
 	p.writeBlockTag("expression", true)
@@ -267,7 +267,7 @@ func ParseTerm(p *syntaxParser) {
 		if token == "-" || token == "~" {
 			p.writeToken(p.getNextToken()) // unary op (-, ~)
 			ParseTerm(p)
-			vw.writeArithmeticCmd(token)
+			vw.writeArithmeticCmd(token, true)
 		} else { // (
 			p.writeToken(p.getNextToken()) // (
 			ParseExpression(p)
@@ -283,7 +283,7 @@ func ParseTerm(p *syntaxParser) {
 			p.writeToken(p.getNextToken()) // [
 			ParseExpression(p)
 			vw.writePushCmd(methodScopeTable.search(tName).varSeg, methodScopeTable.search(tName).varIndex)
-			vw.writeArithmeticCmd("+")
+			vw.writeArithmeticCmd("+", false)
 			vw.writePopCmd("pointer", 1)
 			vw.writePushCmd("that", 0)
 			p.writeToken(p.getNextToken()) // ]
