@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -13,7 +14,6 @@ func parseClass(p syntaxParser) {
 	p.writeToken(p.getNextToken()) // class name
 	p.writeToken(p.getNextToken()) // {
 	ParseClassVarDec(&p)
-	//classScopeTable.printTable()
 	ParseSubRoutineDec(&p)
 	p.writeToken(p.getNextToken()) // }
 	p.writeBlockTag("class", true)
@@ -25,14 +25,14 @@ func ParseClassVarDec(p *syntaxParser) {
 		p.writeBlockTag("classVarDec", false)
 		seg := token
 		p.writeToken(p.getNextToken()) // field || static
-		ttype := getSecondvalue(p.lookahead(1))
+		_, varType := p.lookahead(1)
 		p.writeToken(p.getNextToken()) //<keyword> int </keyword> || <identifier> className </identifier>
-		classScopeTable.insert(getSecondvalue(p.lookahead(1)), ttype, seg)
+		classScopeTable.insert(getSecondvalue(p.lookahead(1)), varType, seg)
 		p.writeToken(p.getNextToken()) //<identifier> x </identifier>
 		_, token = p.lookahead(1)
 		for token == "," {
 			p.writeToken(p.getNextToken()) // <symbol> , </symbol>
-			classScopeTable.insert(getSecondvalue(p.lookahead(1)), ttype, seg)
+			classScopeTable.insert(getSecondvalue(p.lookahead(1)), varType, seg)
 			p.writeToken(p.getNextToken()) //<identifier> y </identifier>
 			_, token = p.lookahead(1)
 		}
@@ -60,7 +60,6 @@ func ParseSubRoutineDec(p *syntaxParser) {
 		ParseSubRoutineBody(p)
 		p.writeBlockTag("subroutineDec", true)
 		_, token = p.lookahead(1)
-		methodScopeTable.printTable()
 	}
 }
 
@@ -96,6 +95,12 @@ func ParseSubRoutineBody(p *syntaxParser) {
 	if vw.currentMethod.mthodType == "method" {
 		vw.writePushCmd("argument", 0)
 		vw.writePopCmd("pointer", 0)
+	}
+	if vw.currentMethod.mthodType == "constructor" {
+		vw.writeConstantsPushCmd(strconv.Itoa(classScopeTable.countSeg("field")), tokenTypeMap[integerConstant])
+		vw.writeCallCmd("Memory.alloc", 1)
+		vw.writePopCmd("pointer", 0)
+
 	}
 	ParseStatments(p)
 	p.writeToken(p.getNextToken()) // <symbol> }</symbol>
@@ -154,7 +159,7 @@ func letStatment(p *syntaxParser) {
 		vw.writePushCmd(methodScopeTable.search(name).varSeg, methodScopeTable.search(name).varIndex)
 		vw.writeArithmeticCmd("+", false)
 		p.writeToken(p.getNextToken()) // ]
-		_, token = p.lookahead(1)
+		//	_, token = p.lookahead(1)
 	}
 	p.writeToken(p.getNextToken()) // =
 	ParseExpression(p)
@@ -172,21 +177,22 @@ func letStatment(p *syntaxParser) {
 }
 
 func ifStatment(p *syntaxParser) {
-	L1 := vw.generateLabelSofix("L1")
-	L2 := vw.generateLabelSofix("L2")
+	labels := vw.generateLabelSofix("IF_FALSE", "IF_TRUE", "IF_END")
+	L1, L2, L3 := labels[0], labels[1], labels[2]
 	p.writeBlockTag("ifStatement", false)
 	p.writeToken(p.getNextToken()) // if
 	p.writeToken(p.getNextToken()) //(
 	ParseExpression(p)
-	vw.writeArithmeticCmd("~", true)
-	vw.writeIfGoTo(L1)
+	vw.writeIfGoTo(L2)
+	vw.writeGoTo(L1)
+	vw.writeLabel(L2)
 	p.writeToken(p.getNextToken()) //)
 	p.writeToken(p.getNextToken()) //{
 	ParseStatments(p)
 	p.writeToken(p.getNextToken()) //}
 	_, token := p.lookahead(1)
 	if token == "else" {
-		vw.writeGoTo(L2)
+		vw.writeGoTo(L3)
 	}
 	vw.writeLabel(L1)
 	if token == "else" {
@@ -194,7 +200,7 @@ func ifStatment(p *syntaxParser) {
 		p.writeToken(p.getNextToken()) //{
 		ParseStatments(p)
 		p.writeToken(p.getNextToken()) //}
-		vw.writeLabel(L2)
+		vw.writeLabel(L3)
 	}
 	p.writeBlockTag("ifStatement", true)
 }
@@ -203,8 +209,8 @@ func whileStatment(p *syntaxParser) {
 	p.writeBlockTag("whileStatement", false)
 	p.writeToken(p.getNextToken()) // while
 	p.writeToken(p.getNextToken()) //(
-	L1 := vw.generateLabelSofix("L1")
-	L2 := vw.generateLabelSofix("L2")
+	labels := vw.generateLabelSofix("WHILE_EXP", "WHILE_END")
+	L1, L2 := labels[0], labels[1]
 	vw.writeLabel(L1)
 	ParseExpression(p)
 	vw.writeArithmeticCmd("~", true)
@@ -233,7 +239,7 @@ func returnStatment(p *syntaxParser) {
 	_, token := p.lookahead(1)
 	if token != ";" {
 		ParseExpression(p)
-		_, token = p.lookahead(1)
+		//		_, token = p.lookahead(1)
 	} else {
 		vw.writePushCmd("constant", 0)
 	}
@@ -296,7 +302,7 @@ func ParseTerm(p *syntaxParser) {
 	p.writeBlockTag("term", true)
 }
 
-func ParseSubRoutineCall(p *syntaxParser) { // ***********************check
+func ParseSubRoutineCall(p *syntaxParser) { //
 	numArgs := 0
 	objNmaeCandidate := getSecondvalue(p.lookahead(1))
 	name := className + "." + getSecondvalue(p.lookahead(1))
@@ -304,16 +310,20 @@ func ParseSubRoutineCall(p *syntaxParser) { // ***********************check
 	_, token := p.lookahead(1)
 	p.writeToken(p.getNextToken()) // ( | .
 	if token == "(" {
+		vw.writePushCmd("pointer", 0) // ------------------check - static fumction----------------------------------------
 		numArgs = ParseExpressionList(p)
 		p.writeToken(p.getNextToken()) // )
+		numArgs++
 	} else { // .
 		if methodScopeTable.search(objNmaeCandidate).varType != "" {
 			vw.writePushCmd(methodScopeTable.search(objNmaeCandidate).varSeg, methodScopeTable.search(objNmaeCandidate).varIndex)
+			numArgs++
+			objNmaeCandidate = methodScopeTable.search(objNmaeCandidate).varType
 		}
 		name = objNmaeCandidate + "." + getSecondvalue(p.lookahead(1))
 		p.writeToken(p.getNextToken()) // routineName
 		p.writeToken(p.getNextToken()) // (
-		numArgs = ParseExpressionList(p)
+		numArgs += ParseExpressionList(p)
 		p.writeToken(p.getNextToken()) // )
 	}
 	vw.writeCallCmd(name, numArgs)

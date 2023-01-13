@@ -27,9 +27,6 @@ func (t Table) search(name string) Row {
 	if _, isTablaContainsVar := t[name]; isTablaContainsVar {
 		return t[name]
 	}
-	if _, isClassTablaContainsVar := t[name]; !isClassTablaContainsVar {
-		return Row{varType: ""}
-	}
 	if classScopeTable[name].varSeg == "static" {
 		return classScopeTable[name]
 	} else {

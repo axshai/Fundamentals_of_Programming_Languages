@@ -14,7 +14,7 @@ type MethodDetails struct {
 
 var vw VmWriter
 
-// Toknizer - Responsible for parsing jack file to tokens
+// VmWriter - Responsible for transltaing jack file to VM
 type VmWriter struct {
 	file          *os.File
 	labelCounter  int
@@ -23,7 +23,7 @@ type VmWriter struct {
 
 func newVmWriter(fileName string) VmWriter {
 	f, _ := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	return VmWriter{file: f, labelCounter: 0, currentMethod: MethodDetails{}}
+	return VmWriter{file: f, labelCounter: 3, currentMethod: MethodDetails{}}
 }
 
 func (v VmWriter) writeConstantsPushCmd(token string, constType string) {
@@ -81,9 +81,9 @@ func (v VmWriter) writeLabel(label string) {
 }
 
 func (v VmWriter) writeReturn() {
-	if vw.currentMethod.mthodType == "constructor" {
-		v.writePushCmd("pointer", 0)
-	}
+	// if vw.currentMethod.mthodType == "constructor" {
+	// 	v.writePushCmd("pointer", 0)
+	// }
 	v.file.WriteString("return\n")
 }
 
@@ -91,10 +91,12 @@ func (v VmWriter) writeFuncDec() {
 	v.file.WriteString(fmt.Sprintf("function %s.%s %d\n", className, v.currentMethod.name, v.currentMethod.localsNum))
 }
 
-func (v *VmWriter) generateLabelSofix(label string) string {
-	label = label + strconv.Itoa(v.labelCounter)
+func (v *VmWriter) generateLabelSofix(labels ...string) []string {
+	for i := range labels {
+		labels[i] += strconv.Itoa(v.labelCounter)
+	}
 	v.labelCounter++
-	return label
+	return labels
 }
 
 func (v VmWriter) closeVmWriter() {
